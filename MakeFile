@@ -1,0 +1,19 @@
+CC = gcc
+#controllare le slide di shifanella oer il linkaggio e la creazione del make file
+#master corretta
+master: master.o configuration.o
+	gcc -o master configuration.o master.o
+master.o: master.c 
+	gcc -c master.c
+ship: ship.o configuration.o
+	gcc -o ship configuration.o ship.o
+ship.o: ship.c
+	gcc -c ship.c
+port: port.o configuration.o 
+	gcc -o port port.o configuration.o
+port.o: port.c
+	gcc -c por.c
+configuration.o: configuration.c configuration.h math.h
+	gcc -c configuration.c
+
+.c.o : gcc -c $<
