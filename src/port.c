@@ -1,4 +1,3 @@
-/*come eseguire : gcc port.c , gcc -o port port.c*/
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
