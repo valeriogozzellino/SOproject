@@ -91,7 +91,7 @@ void open_file(FILE **f_c);
 
 /* ---funzione che legge dei valori da "file-configurazione" per inizializzare i parametri della struct var_conf
     che contiene le variabili di configurazione SO_...----- */
-void find_val(struct var_conf *env_var);
+void find_val(struct var_conf *env_var);/*CORRETTA*/
 
 /*-----inizializzo le var di configurazione in shared memory----*/
 void sh_memory_v_conf(struct var_conf env_var, struct var_conf *ptr_shm_v_conf);
@@ -102,7 +102,7 @@ void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good);
 /*-----inizialization of port shared memory----*/
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port);
 /*-----sorting of the port's distance from the origin of the map and assignement of id_port------*/
-void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port);
+void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port); /*CORRETTA*/
 /*-----inizialization of ship shared memory----*/
 void sh_memory_v_ship(struct var_conf env_var, struct ship *ptr_shm_ship);
 /*-----inizializzo i valori dei semafori nel master-------*/

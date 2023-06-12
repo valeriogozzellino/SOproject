@@ -136,7 +136,7 @@ void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good)
         printf("merce: id[%i],size[%i], life[%i]\n", ptr_shm_good[i].id, ptr_shm_good[i].size, ptr_shm_good[i].life);
     }
 }
-/*-----inizialization of port shared memory----*/
+/*-----inizialization of port shared memory e assegnamento della loro posizione----*/
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
 {
     int n_banchine = (rand() % env_var.so_banchine) + 1;
@@ -145,7 +145,7 @@ void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
         ptr_shm_port[j].n_banchine = n_banchine;
         ptr_shm_port[j].fill = env_var.so_fill;
     }
-    printf("banchine [%i], fill [%i]", ptr_shm_port[0].n_banchine, ptr_shm_port[0].fill);
+    printf("Ogni porto ha : banchine [%i], fill [%i]", ptr_shm_port[0].n_banchine, ptr_shm_port[0].fill);
     // rappresentazione asse cartesiano
     for (int i = 0; i < env_var.so_porti; i++)
     {
@@ -171,32 +171,36 @@ void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
             ptr_shm_port[i].pos_porto.x = ((double)rand() / RAND_MAX * env_var.so_lato);
             ptr_shm_port[i].pos_porto.y = ((double)rand() / RAND_MAX * env_var.so_lato);
         }
-        printf("posizione del porto %i,[%f,%f]\n", i, ptr_shm_port[i].pos_porto.x, ptr_shm_port[i].pos_porto.y);
+        printf("posizione del porto %i---->[%f,%f]\n", i, ptr_shm_port[i].pos_porto.x, ptr_shm_port[i].pos_porto.y);
     }
 }
+/*mi posiziona i porti in maniera ordinata in un per la distanza della loro mappa in modo da stabilire un percorso per la nave se
+semplicemente ciclando sull'array*/
 void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
 {
-    double *sort_port_distance;
-    int tmp;
-    sort_port_distance = malloc(sizeof(double) * (ptr_shm_v_conf->so_porti));
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    // salvo la distanza da punto 00 del porto J
+    // UTILIZZO IL METODO DEL BUBBLESORT
+    int scambi = 1; // se è già ordinato gli scambi sono zero
+    struct port tmp;
+    int length = ptr_shm_v_conf->so_porti;
+    while (scambi == 1)
     {
-        //sort_port_distance[i] = sqrt(pow(0 - ptr_shm_port[i].pos_porto.x, 2) + pow(0 - ptr_shm_port[i].pos_porto.y, 2));
-        ptr_shm_port[i].id_port = i;
-    }
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
-    {
-        for (int j = 0; j < ptr_shm_v_conf->so_porti; j++)
+        scambi = 0;
+        for (int j = 0; j < length; j++)
         {
-            if (sort_port_distance[i] > sort_port_distance[j])
+            double dist1 = sqrt(pow(0 - ptr_shm_port[j].pos_porto.x, 2) + pow(0 - ptr_shm_port[j].pos_porto.y, 2));
+            // salvo la distanza 2
+            double dist2 = sqrt(pow(0 - ptr_shm_port[j + 1].pos_porto.x, 2) + pow(0 - ptr_shm_port[j + 1].pos_porto.y, 2));
+            if (dist1 > dist2)
             {
-                tmp = ptr_shm_port[i].id_port;
-                ptr_shm_port[i].id_port = ptr_shm_port[j].id_port;
-                ptr_shm_port[j].id_port = tmp;
+                tmp = ptr_shm_port[j];
+                ptr_shm_port[j] = ptr_shm_port[j + 1];
+                ptr_shm_port[j + 1] = tmp;
+                scambi = 1;
             }
         }
+        length--;
     }
-    free(sort_port_distance);
 }
 
 /*-----inizialization of ship shared memory----*/
