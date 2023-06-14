@@ -40,12 +40,13 @@ int status;
 void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf);
 void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf);
 /*---inizializza i semafori----*/
-void handle_signal(int signal);
+// void handle_signal(int signal);
+void signalHandler(int signum);
 /*----------MAIN-----------*/
 int main()
 {
     /*------ora configuro le variabili-------*/
-    struct sigaction sa;
+    signal(SIGINT, signalHandler);
     int ship_cariche, ship_vuote, ship_porto, days_real;
     srand(time(NULL));
     // env_var = malloc(sizeof(struct var_conf));
@@ -107,16 +108,21 @@ int main()
     sh_memory_v_porti(env_var, ptr_shm_port);
     /*------inizialization parameter for ship in configuration-----*/
     sh_memory_v_ship(env_var, ptr_shm_ship);
+    /*------inizializzo le risorse per il semafori------*/
+    load_val_semaphor(sem_id_banchine, sem_id_shm, sem_id, ptr_shm_semaphore, ptr_shm_v_conf);
+
     printf("HO INIZIALIZZATO I VALORI IN MEMORIA CONDIVISA , es: \n semaforo 1:%i, size merce casuale: %i, so fill porto:%i \n", ptr_shm_semaphore[0], ptr_shm_good[4].size, ptr_shm_port[1].fill);
     /*-----creazione dei processi porto-----*/
     create_port(ptr_shm_port, ptr_shm_v_conf);
-    /*-----creazione delle navi-----*/
-    create_ship(ptr_shm_ship, ptr_shm_v_conf);
     /*----ordinamento dei porti, richiamo port_sorting in configuration------*/
     port_sorting(ptr_shm_v_conf, ptr_shm_port);
-    /*------inizializzo le risorse per il semafori------*/
-    load_val_semaphor(sem_id_banchine, sem_id_shm, sem_id, ptr_shm_semaphore, ptr_shm_v_conf);
+    printf("sono il master sono uscito dalla port sorting\n");
+    /*-----creazione delle navi-----*/
+    create_ship(ptr_shm_ship, ptr_shm_v_conf);
+    printf("sono il master sono uscito alla create ship\n");
+
     /*----ALL PROCESS CREATED-----*/
+    printf("numero di processi totali è: [%i]", NUM_PROCESSI);
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
@@ -156,12 +162,7 @@ int main()
         printf("ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
         printf("numero di giorni: %i\n", days_real);
     }
-    /*termine della simulazione ricevo il segnale di allarme*/
-    bzero(&sa, sizeof(sa));
-    sa.sa_handler = handle_signal;
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    /*ho terminato i processi con una kill*/
+
     printf("sto per cancellare la mem condivisa\n");
     /*--------TERMINAZIONE DELLA SIMULAZIONE-----------------*/
     /*------elimino la memoria condivisa-----*/
@@ -220,6 +221,7 @@ void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
             TEST_ERROR;
         case 0:
             ptr_shm_port[i].pid = getpid();
+
             printf("----EXECVP DEL PORTO[%i] CON PID :[%i]-----\n", i, ptr_shm_port[i].pid);
             execvp(PATH_PORT, args_porto);
             perror("Execve error\n");
@@ -284,21 +286,71 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
     free(id_mem_semop);
 }
 
-void handle_signal(int signal)
+void signalHandler(int signum)
 {
-    switch (signal)
+
+    printf("Ricevuto segnale SIGINT. Eseguo la pulizia...\n");
+
+    switch (signum)
     {
     case SIGINT:
-
     case SIGALRM:
+
         for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
         {
-            kill(ptr_shm_port[i].pid, SIGUSR1);
+            if (shmctl(ptr_shm_port[i].id_shm_domanda, IPC_RMID, NULL) == -1)
+            {
+                printf("ERROR IN remove id_shm_domanda\n");
+            }
+            if (shmctl(ptr_shm_port[i].id_shm_offerta, IPC_RMID, NULL) == -1)
+            {
+                printf("ERROR IN remove shm offerta\n");
+            }
+            if (kill(ptr_shm_port[i].pid, SIGUSR1) == -1)
+            {
+                printf("ERROR IN KILL\n");
+            }
         }
+        printf("eliminato i porti\n");
         for (int i = 0; i < ptr_shm_v_conf->so_navi; i++)
         {
+
             kill(ptr_shm_ship[i].pid, SIGUSR1);
+        }
+        if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
+        {
+            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+        }
+        if (shmctl(sh_mem_id_good, IPC_RMID, NULL) == -1)
+        {
+            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+        }
+        if (shmctl(sh_mem_id_port, IPC_RMID, NULL) == -1)
+        {
+            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+        }
+        if (shmctl(sh_mem_id_ship, IPC_RMID, NULL))
+        {
+            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+        }
+        if (shmctl(sh_mem_id_semaphore, IPC_RMID, NULL))
+        {
+            printf("ERROR IN SEMCTL SEM_ID");
+        }
+        if (semctl(sem_id, 0, IPC_RMID) == -1)
+        {
+            printf("ERROR IN SEMCTL SEM_ID");
+        }
+        if (semctl(sem_id_banchine, 0, IPC_RMID) == -1)
+        {
+            printf("ERROR IN SEMCTL SEM BANCHINE");
+        }
+        if (semctl(sem_id_shm, 0, IPC_RMID) == -1)
+        {
+            printf("ERROR IN SEMCTL SEM SHM");
         }
         break;
     }
+    printf("eliminato tutto\n");
+    exit(EXIT_SUCCESS);
 }

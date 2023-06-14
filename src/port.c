@@ -32,7 +32,7 @@ int id_shm_domanda, id_shm_offerta;
 /*----PROTOTIPI DI FUNZIONI-----*/
 void create_good(struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, struct good *domanda, struct good *offerta, int id_shm_domanda, int id_shm_offertaint, int type_offered, int type_asked);
 void create_lotti(struct good *domanda, struct good *offerta, int ton_days, int type_offered, int type_asked, int id_porto);
-void handle_signal_termination(int signal);
+// void handle_signal_termination(int signal);
 /*-------FUNZIONE MAIN-------*/
 void main(int argc, char *argv[])
 {
@@ -41,28 +41,28 @@ void main(int argc, char *argv[])
     sh_mem_id_conf = atoi(argv[2]);
     sh_mem_id_port = atoi(argv[3]);
     sh_mem_id_semaphore = atoi(argv[4]);
-    printf("SONO NEL PORTO:shm_id_good[%i],sh_mem_id_conf[%i],sh_mem_id_port[%i],sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
-    ptr_shm_good = shmat(sh_mem_id_good, NULL, 0600);   // ONLY read
-    ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0600); // ONLY read
+    printf("SONO NEL PORTO : shm_id_good[%i], sh_mem_id_conf[%i], sh_mem_id_port[%i], sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
+    ptr_shm_good = shmat(sh_mem_id_good, NULL, 0600);
+    ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0600);
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, 0600);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
+    srand(time(0));
+    double ton_days;
 
-    /*l'ID del porto non lo inserisco in ordine di creazione del porto ma in base alla sua posizione all'interno della mappa
-    INSERIRE IN UN HEADER FILE*/
+    /*mi ricondico al id del mio porto per gestirlo*/
     for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         if (getpid() == ptr_shm_porto[i].pid)
         {
             id_porto = ptr_shm_porto[i].id_port;
+            printf("id_porto==[%i], ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
         }
     }
-    printf("ID_PORTO[%i]\n", id_porto);
+    printf("ID_PORTO [%i]\n", id_porto);
     int type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
     int type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
-    double ton_days;
-    srand(time(NULL));
     /*
-    creo una memoria condivisa per organizzare domanda e offerta-
+    creo una memoria condivisa per organizzare domanda e offerta-per ogni porto
     */
     id_shm_offerta = shmget(IPC_PRIVATE, (sizeof(struct good)) * type_offered, 0600);
     id_shm_domanda = shmget(IPC_PRIVATE, (sizeof(struct good)) * type_asked, 0600);
@@ -72,11 +72,12 @@ void main(int argc, char *argv[])
     offerta = shmat(id_shm_offerta, NULL, 0600);
     domanda = shmat(id_shm_domanda, NULL, 0600);
     /*imposto l'handler*/
-    sa.sa_handler = handle_signal_termination;
+    // sa.sa_handler = handle_signal_termination;
     /*-----
     creo i lotti
     -----*/
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
+    printf("tonnellate al giorno PORTO[%i]----> [%f]", id_porto, ton_days);
     create_good(ptr_shm_v_conf, ptr_shm_good, domanda, offerta, id_shm_domanda, id_shm_offerta, type_offered, type_asked);
     /*secondo me non funziona create lotti!!!*/
     create_lotti(domanda, offerta, ton_days, type_offered, type_asked, id_porto);
@@ -97,16 +98,16 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("START SIMULAZIONE PORTI\n");
     /*----START SIMULAZIONE-----*/
-    while (1)
+    int i = 0;
+    while (i <= ptr_shm_v_conf->so_days)
     {
 
         sleep(1);
         create_lotti(domanda, offerta, ton_days, type_offered, type_asked, id_porto); /*creazione giornaliera di lotti*/
-
-        // rimane in loop fino a quando il gestore non decide di terminarmi
+        i++;
     }
     // impostare un handler con una maschera che se ricevo segnale di terminazone allora maschero il segnale elimino tutto e poi termino
-    sigaction(SIGUSR1, &sa, NULL);
+    // sigaction(SIGUSR1, &sa, NULL);
 }
 
 /*-----CREAZIONE DELLE MERCI --------*/
@@ -141,18 +142,19 @@ void create_good(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, s
             }
         }
         domanda[i].size = ptr_shm_good[domanda[i].id].size; /* assegno il peso */
-        printf("tipi domandati dal porto[%i]: (%i), merce id: (%i), size(%i)\n", id_porto, domanda[i].type_asked, domanda[i].id, domanda[i].size);
+        printf("tipi domandati dal porto[%i]: tipi richiesti(%i), merce id: (%i), size(%i)\n", id_porto, domanda[i].type_asked, domanda[i].id, domanda[i].size);
     }
 }
 /*----CREAZIONE DEI LOTTI-------- */
+/*CONTROLLARE QUESTA FUNZIONE EEEE*/
 /*cercando di utilizzare il più possibile lo spazio di SO_FILL------*/
 void create_lotti(struct good *domanda, struct good *offerta, int ton_days, int type_offered, int type_asked, int id_porto)
 {
 
     int end = 1, end_2;
-    double ton_disp = ton_days / 2; // il valore restituito può essere un double??
+    double ton_disp = ton_days / 2;
     double ton_disp2 = ton_days / 2;
-    double ton_disp3; // terzo controllo utilizzato per la domma degli avanzi distribuiti.
+    double ton_disp3; // terzo controllo utilizzato per la somma degli avanzi distribuiti.
     for (int j = 0; end == 1; j++)
     {
         if (j == type_offered) /*riparto dall'inizio*/
@@ -232,26 +234,15 @@ void create_lotti(struct good *domanda, struct good *offerta, int ton_days, int 
     for (int j = 0; j < type_asked; j++)
     {
 
-        printf(" porto:[%i], merce[%i], lotti domandati (%i)\n", id_porto, j, domanda[j].lotti);
+        printf(" porto:[%i], merce-type[%i], lotti domandati (%i)\n", id_porto, domanda[j].id, domanda[j].lotti);
     }
     for (int j = 0; j < type_offered; j++)
     {
 
-        printf("porto[%i], merce[%i], lotti in offerta creati(%i)\n", id_porto, j, offerta[j].lotti);
+        printf("porto[%i], merce-type[%i], lotti in offerta creati(%i)\n", id_porto, offerta[j].id, offerta[j].lotti);
     }
 }
 
-void handle_signal_termination(int signal)
-{
-    switch (signal)
-    {
-    case SIGUSR1:
-        shmctl(id_shm_domanda, IPC_RMID, NULL);
-        shmctl(id_shm_offerta, IPC_RMID, NULL);
-        exit(EXIT_SUCCESS);
-        break;
-    }
-}
 /*problemi: - non cancello la mem condivisa le malloc e la msg ,lo devo fare quando ricevo il segnale di terminazione dal master
 perciò devo mascherare il segnale
 - ogni volta che passa un giorno posso inviare un segnale dal master e richiedere di inviare le informazioni utili per il recap

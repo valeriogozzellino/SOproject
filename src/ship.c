@@ -21,7 +21,7 @@
 /*---------PROTOTIPI DI FUNZIONI----------*/
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship);
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship);
-void handle_signal_termination(int signal);
+// void handle_signal_termination(int signal);
 /*---------VARIABILI GLOBALI-------------*/
 struct var_conf *ptr_shm_v_conf;
 struct good *ptr_shm_good;
@@ -41,7 +41,6 @@ void main(int argc, char *argv[])
     int id_ship, id_porto, merce_scambiata;
     double tmp_load;
     struct timespec *nano_load;
-    struct sigaction sa;
     srand(time(NULL));
     printf("sono nel file ship\n");
     /*----arguments from master's execve----*/
@@ -71,8 +70,8 @@ void main(int argc, char *argv[])
         }
     }
     /*setto l'handler per la terminazione*/
-    sa.sa_handler = handle_signal_termination;
-    sa.sa_flags = 0;
+    // sa.sa_handler = handle_signal_termination;
+    // sa.sa_flags = 0;
     /*finito la configurazione*/
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
@@ -176,20 +175,8 @@ void main(int argc, char *argv[])
         }
         ship_move_to(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     }
-    sigaction(SIGUSR1, &sa, NULL);
+    // sigaction(SIGUSR1, &sa, NULL);
 }
-
-/*a) funzione che va a determinare in quale dei porti fare visita, si dirige verso il porto
-    a seconda della posizione in cui è, viene fatto un confroto con la posizione i tutti i porti in shared memory
-    faccio una differenza tra porto e nave e a seconda del minor numero positivo ho scelto il porto*/
-
-/*b) funzione di gestione iterazione tra navi e porti, se la nave si trova in prossimità del porto deve
-scegliere le azioni che andrà a svolgere:
-- 1) se la nave può scaricare do la precendenza e scarica le merci che richiede il porto, quindi
-devo fare un controllo sulle risorse che ha la nave e quelle che mancano al porto in un ciclo ogni volta che
-la nave ha una risorsa,  viene scaricata  , +1 al porto
-- 2) se la nave non scarica (o ha scaricato) allora può caricare delle risorse fino ad SO_CAPACITY della nave.
-    verificare se fargli distibuire le risorse che ha il porto, ad esempio 2 ton di merce 1, 3 ton di merce 3... */
 
 /*----funzione di movimento della nave verso il porto più vicino----*/
 /*DA CONTROLLAREEEEEEEE*/
@@ -258,13 +245,13 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
     printf("posizione della nave[%i] aggiornata:(%f,%f)", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
 }
 
-void handle_signal_termination(int signal)
-{
-    switch (signal)
-    {
-    case SIGUSR1:
-        free(stiva);
-        exit(EXIT_SUCCESS);
-        break;
-    }
-}
+// void handle_signal_termination(int signal)
+// {
+//     switch (signal)
+//     {
+//     case SIGUSR1:
+//         free(stiva);
+//         exit(EXIT_SUCCESS);
+//         break;
+//     }
+// }
