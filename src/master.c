@@ -1,8 +1,4 @@
 /*MASTER*/
-/*per la compilazione dei file in modo separato senza utilizzare il make file:
-gcc -c nome-della-libreria.c
-gcc -c master.c
-gcc -o master master.o nome-della-libreria.o ...(con ogni libreira che deve essere integrata)*/
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,10 +115,11 @@ int main()
     printf("sono il master sono uscito dalla port sorting\n");
     /*-----creazione delle navi-----*/
     create_ship(ptr_shm_ship, ptr_shm_v_conf);
-    printf("sono il master sono uscito alla create ship\n");
+
+    printf("sono il master sono uscito dalla create ship\n");
 
     /*----ALL PROCESS CREATED-----*/
-    printf("numero di processi totali è: [%i]", NUM_PROCESSI);
+    printf("numero di processi totali è:");
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
@@ -221,7 +218,7 @@ void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
             TEST_ERROR;
         case 0:
             ptr_shm_port[i].pid = getpid();
-
+            ptr_shm_port[i].id_port = i;
             printf("----EXECVP DEL PORTO[%i] CON PID :[%i]-----\n", i, ptr_shm_port[i].pid);
             execvp(PATH_PORT, args_porto);
             perror("Execve error\n");
@@ -306,7 +303,7 @@ void signalHandler(int signum)
             {
                 printf("ERROR IN remove shm offerta\n");
             }
-            if (kill(ptr_shm_port[i].pid, SIGUSR1) == -1)
+            if (kill(ptr_shm_port[i].pid, SIGINT) == -1)
             {
                 printf("ERROR IN KILL\n");
             }
@@ -315,7 +312,10 @@ void signalHandler(int signum)
         for (int i = 0; i < ptr_shm_v_conf->so_navi; i++)
         {
 
-            kill(ptr_shm_ship[i].pid, SIGUSR1);
+            if (kill(ptr_shm_ship[i].pid, SIGINT) != -1)
+            {
+                printf("segnale di terminazione inviato correttamente alla nave\n");
+            }
         }
         if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
         {

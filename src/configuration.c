@@ -174,43 +174,43 @@ void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
     }
 }
 
-/*mi posiziona i porti in maniera ordinata in un per la distanza della loro mappa in modo da stabilire un percorso per la nave se
+/*mi posiziona i porti in maniera ordinata per la distanza dal punto 0 nella  mappa in modo da stabilire un percorso per la nave se
 semplicemente ciclando sull'array*/
+double distance_from_origin(struct port *porto)
+{
+    return sqrt(pow(porto->pos_porto.x, 2) + pow(porto->pos_porto.y, 2));
+}
+
+// Metodo per lo scambio di due porti all'interno dell'array
+void swap_ports(struct port *a, struct port *b)
+{
+    struct port tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+// Metodo per l'ordinamento dell'array `ptr_shm_port` in base alla distanza dal punto (0,0)
 void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
 {
-    // salvo la distanza da punto 00 del porto J
-    // UTILIZZO IL METODO DEL BUBBLESORT
-    int scambi = 1; // se è già ordinato gli scambi sono zero
-    struct port tmp;
     int length = ptr_shm_v_conf->so_porti;
-    while (scambi == 1)
+    int sorted = 0;
+
+    while (!sorted)
     {
-        scambi = 0;
+        sorted = 1;
         for (int j = 0; j < length - 1; j++)
         {
-            double dist1 = sqrt(pow(0 - ptr_shm_port[j].pos_porto.x, 2) + pow(0 - ptr_shm_port[j].pos_porto.y, 2));
-            // salvo la distanza 2
-            double dist2 = sqrt(pow(0 - ptr_shm_port[j + 1].pos_porto.x, 2) + pow(0 - ptr_shm_port[j + 1].pos_porto.y, 2));
+            double dist1 = distance_from_origin(&ptr_shm_port[j]);
+            double dist2 = distance_from_origin(&ptr_shm_port[j + 1]);
+
             if (dist1 > dist2)
             {
-                tmp = ptr_shm_port[j];
-                ptr_shm_port[j] = ptr_shm_port[j + 1];
-                ptr_shm_port[j + 1] = tmp;
-                scambi = 1;
-                printf("sono nell'if\n");
+                swap_ports(&ptr_shm_port[j], &ptr_shm_port[j + 1]);
+                sorted = 0;
             }
-            printf("sono nel for\n");
         }
         length--;
-        printf("sono nel while\n");
     }
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
-    {
-        ptr_shm_port[i].id_port = i;
-        printf("porti in ordine : %i\n", ptr_shm_port[i].id_port);
-    }
-
-    printf("uscito dal ciclo");
 }
 
 /*-----inizialization of ship shared memory----*/

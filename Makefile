@@ -1,5 +1,6 @@
 CC = gcc
 all: bin/master bin/port bin/ship
+prova: bin/file-prova
 
 CFLAGS = -g
 
@@ -19,5 +20,7 @@ bin/ship: build/ship.o build/configuration.o $(COMMON_DEPS)
 bin/port: build/port.o build/configuration.o $(COMMON_DEPS)
 	$(CC) -o bin/port build/configuration.o build/port.o -lm
 
+bin/file-prova: build/file-prova.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o -lm 
 clean: 
 	rm -f build/* bin/*

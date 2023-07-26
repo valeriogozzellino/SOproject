@@ -96,20 +96,18 @@ void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, 
     // Creazione delle quantità dei tipi di merce offerti
     for (int i = 0; i < type_offered; i++)
     {
-        offerta[i].type_offered = type_offered;
         offerta[i].id = rand() % ptr_shm_var_conf->so_merci;
         offerta[i].size = ptr_shm_good[offerta[i].id].size;
         offerta[i].life = ptr_shm_good[offerta[i].id].life;
-        printf("Tipi offerti dal porto[%i]: (%i), merce id: (%i), size(%i), life(%i)\n", id_porto, offerta[i].type_offered, offerta[i].id, offerta[i].size, offerta[i].life);
+        printf("Tipi offerti---> merce id: (%i), size(%i), life(%i)\n", offerta[i].id, offerta[i].size, offerta[i].life);
     }
 
     // Creazione delle quantità dei tipi di merce domandati
     for (int i = 0; i < type_asked; i++)
     {
-        domanda[i].type_asked = type_asked;
         domanda[i].id = rand() % ptr_shm_var_conf->so_merci;
         domanda[i].size = ptr_shm_good[domanda[i].id].size;
-        printf("Tipi domandati dal porto[%i]: tipi richiesti(%i), merce id: (%i), size(%i)\n", id_porto, domanda[i].type_asked, domanda[i].id, domanda[i].size);
+        printf("Tipi domandati----> merce id: (%i), size(%i)\n", domanda[i].id, domanda[i].size);
     }
 }
 
@@ -120,22 +118,33 @@ void create_lots(struct good *domanda, struct good *offerta, int ton_days, int t
     double ton_disp3;
 
     // Creazione dei lotti per le merci offerte
-    for (int j = 0; j < type_offered; j++)
+    int creazione = 1;
+    while (creazione != 0)
     {
-        while (offerta[j].size < ton_disp)
+        creazione = 0;
+        for (int j = 0; j < type_offered; j++)
         {
-            offerta[j].lotti++;
-            ton_disp -= offerta[j].size;
+            if (offerta[j].size < ton_disp)
+            {
+                creazione = 1;
+                offerta[j].lotti++;
+                ton_disp -= offerta[j].size;
+            }
         }
     }
-
     // Creazione dei lotti per le merci domandate
-    for (int j = 0; j < type_asked; j++)
+    creazione = 1;
+    while (creazione != 0)
     {
-        while (domanda[j].size < ton_disp2)
+        creazione = 0;
+        for (int j = 0; j < type_asked; j++)
         {
-            domanda[j].lotti++;
-            ton_disp2 -= domanda[j].size;
+            if (domanda[j].size < ton_disp2)
+            {
+                creazione = 1;
+                domanda[j].lotti++;
+                ton_disp2 -= domanda[j].size;
+            }
         }
     }
 
@@ -176,7 +185,7 @@ void main(int argc, char *argv[])
     sh_mem_id_conf = atoi(argv[2]);
     sh_mem_id_port = atoi(argv[3]);
     sh_mem_id_semaphore = atoi(argv[4]);
-    printf("SONO NEL PORTO : shm_id_good[%i], sh_mem_id_conf[%i], sh_mem_id_port[%i], sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
+    // printf("SONO NEL PORTO : shm_id_good[%i], sh_mem_id_conf[%i], sh_mem_id_port[%i], sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
     ptr_shm_good = shmat(sh_mem_id_good, NULL, 0600);
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0600);
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, 0600);
@@ -184,36 +193,40 @@ void main(int argc, char *argv[])
     srand(time(0));
     double ton_days;
 
-    /*mi ricondico al id del mio porto per gestirlo*/
+    /*mi riconduco all'id del mio porto per matchare i dati*/
     for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         if (getpid() == ptr_shm_porto[i].pid)
         {
-            id_porto = ptr_shm_porto[i].id_port;
+            id_porto = i;
             printf("id_porto==[%i], ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
         }
     }
     printf("ID_PORTO [%i]\n", id_porto);
     int type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
     int type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
+    ptr_shm_porto[id_porto].n_type_asked = type_asked;
+    ptr_shm_porto[id_porto].n_type_offered = type_offered;
     /*
     creo una memoria condivisa per organizzare domanda e offerta-per ogni porto
     */
     id_shm_offerta = shmget(IPC_PRIVATE, (sizeof(struct good)) * type_offered, 0600);
     id_shm_domanda = shmget(IPC_PRIVATE, (sizeof(struct good)) * type_asked, 0600);
+    /**salvo il memoria condivisa  il numero dei tipi offerti utilizzati nello scambio di merce con le navi*/
     ptr_shm_porto[id_porto].id_shm_offerta = id_shm_offerta;
     ptr_shm_porto[id_porto].id_shm_domanda = id_shm_domanda;
-    printf("shm_offerta=[%i], shm_domanda=[%i]\n ", id_shm_offerta, id_shm_domanda);
+    /*memoria condivisa per offerta e domanda, visibile alle navi*/
     offerta = shmat(id_shm_offerta, NULL, 0600);
     domanda = shmat(id_shm_domanda, NULL, 0600);
     /*imposto l'handler*/
-    if (signal(SIGKILL, handle_kill_signal) == SIG_ERR)
+    if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
     {
+        printf("ricezione segnale nel porto\n");
         perror("signal");
         exit(1);
     }
     /*-----
-    creo i lotti
+    creo la merce e i lotti
     -----*/
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
     printf("tonnellate al giorno PORTO[%i]----> [%f]", id_porto, ton_days);

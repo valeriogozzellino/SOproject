@@ -42,11 +42,11 @@ struct good
     int id;   /*numero che identifica la merce*/
     int size; /*size determinata tra 1<x<SO_SIZE generata nel master e assegnata ai porti, ogni porto diversa*/
     int lotti;
-    int life;         /*cutdown alla scadenza, un intero che utilizzo come allarme per segnalare che una merce è scaduta*/
-    int type_offered; // uguale indipendente a seconda del porto su cui mi trovo va a specificare il numero dei tipidi merce offerta
-    int type_asked;
-    int ritirata;   /*settato a 1 se una nave ha preo questo carico*/
-    int consegnata; /*settato a 1 se la merce è consegnata al porto*/
+    int life;           /*cutdown alla scadenza, un intero che utilizzo come allarme per segnalare che una merce è scaduta*/
+    int ritirata;       /*settato a 1 se una nave ha preo questo carico*/
+    int consegnata;     /*settato a 1 se la merce è consegnata al porto*/
+    clock_t start_time; /*timer della scadenza della merce*/
+    int timer;
 };
 
 /*----position of object in the map-----*/
@@ -76,7 +76,9 @@ struct port
     int n_banchine;            /*capire bene come determinare le banchine, sono dei semafori che permettono ad una barca di accedere o no*/
     int fill;
     int id_shm_offerta;
-    int id_shm_domanda;
+    int id_shm_domanda; // id della shared memory della domanda di merci
+    int n_type_offered; // numero di tipi fi merce offerti alle navi
+    int n_type_asked;
     int g_received; /*merce ricevuta */
     int g_send;     /*merce inviata */
 };
@@ -91,7 +93,7 @@ void open_file(FILE **f_c);
 
 /* ---funzione che legge dei valori da "file-configurazione" per inizializzare i parametri della struct var_conf
     che contiene le variabili di configurazione SO_...----- */
-void find_val(struct var_conf *env_var);/*CORRETTA*/
+void find_val(struct var_conf *env_var); /*CORRETTA*/
 
 /*-----inizializzo le var di configurazione in shared memory----*/
 void sh_memory_v_conf(struct var_conf env_var, struct var_conf *ptr_shm_v_conf);

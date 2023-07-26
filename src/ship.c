@@ -83,11 +83,11 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     /*array distanze lo utilizzo per selezionare il porto più vicino*/
     double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
     int indice_first_port = 0;
-    printf("sono nella funzione ship_move first_position");
     for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         /*inserisco il valore assoluto*/
         array_distance[i] = sqrt(pow(ptr_shm_port[i].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[i].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2));
+        printf("distanza porti dalla nave: %f\n", array_distance[i]);
     }
     /*seleziono la distanza minore*/
     for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
@@ -145,8 +145,7 @@ void main(int argc, char *argv[])
     int id_ship, id_porto, merce_scambiata;
     double tmp_load;
     struct timespec *nano_load;
-    srand(time(NULL));
-    printf("sono nel file ship\n");
+    srand(time(0));
     /*----arguments from master's execve----*/
     sh_mem_id_good = atoi(argv[1]);
     sh_mem_id_conf = atoi(argv[2]);
@@ -161,25 +160,27 @@ void main(int argc, char *argv[])
     ptr_shm_ship = shmat(sh_mem_id_ship, NULL, 0600);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
     /*-----alloco un array per il trasporto di merci-----*/
-    stiva = malloc(sizeof(struct good) * ptr_shm_v_conf->so_merci);
+    stiva = malloc(sizeof(struct good) * ptr_shm_v_conf->so_merci); // alloco spazio per trasportare  la merce
     sh_memory_v_good(*ptr_shm_v_conf, stiva);
-    printf("inizializzato il valore in stiva es:size[%i], id[%i] \n", stiva[0].size, stiva[0].id);
+    /**
+     * ricerco il pid tra le navi per matchare i dati e avere l'id_ship
+     */
     for (int i = 0; i < ptr_shm_v_conf->so_navi; i++)
     {
         if (getpid() == ptr_shm_ship[i].pid)
         {
             ptr_shm_ship[i].id_ship = i;
             id_ship = i;
-            /*mi sono assicurato che la posizione della nave combacia con la nave */
         }
     }
+    printf("ID_SHIP[%d]\n", id_ship);
     /*setto l'handler per la terminazione*/
-    if (signal(SIGKILL, handle_kill_signal) == SIG_ERR)
+    if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
         perror("signal");
         exit(1);
     }
-    /*finito la configurazione*/
+    /*-------finito la configurazione------*/
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
@@ -189,7 +190,7 @@ void main(int argc, char *argv[])
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-------START SIMULATION FOR THE SHIP %i-------\n", id_ship);
+    printf("-------START SIMULATION FOR THE SHIP [%i]-------\n", id_ship);
     /*eseguita la prima volta per RAGGIUNGERE IL PRIMO PORTO DALLA POSIZIONE CASUALE, SUCCESSIVAMENTE SI SPOSTERÀ DI PORTO IN PORTO*/
     ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     /*--------execution and ship's job------*/
@@ -203,7 +204,7 @@ void main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         { /* se diverso ho avuto accesso alla banchina quindi posso se possibile accedere alla shm*/
             /*INSERIRE LA MSGET PER OTTENERE DAI PORTI L'ID DELLA MEMORIA CONDIVISA*/
-            ptr_shm_ship[id_ship].location = 1;
+            ptr_shm_ship[id_ship].location = 1; // segnalo di essere in un porto
             sops.sem_num = id_porto;
             sops.sem_op = -1;
             sops.sem_flg = 0;
@@ -220,7 +221,7 @@ void main(int argc, char *argv[])
                     merce_scambiata = 0;
                     for (int j = 0; j < ptr_shm_v_conf->so_merci; i++)
                     {
-                        for (int z = 0; z < domanda_porto[i].type_asked; i++)
+                        for (int z = 0; z < ptr_shm_port[id_porto].n_type_asked; i++)
                         {
                             if (stiva[j].id == domanda_porto[z].id)
                             {
@@ -243,7 +244,7 @@ void main(int argc, char *argv[])
                     nanosleep(nano_load, NULL);
                 }
                 merce_scambiata = 0;
-                for (int j = 0; (j < offerta_porto[i].type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); i++)
+                for (int j = 0; (j < ptr_shm_port[id_porto].n_type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); i++)
                 {
                     for (int i = 0; i < ptr_shm_v_conf->so_merci; i++)
                     {
