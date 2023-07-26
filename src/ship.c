@@ -145,7 +145,7 @@ void main(int argc, char *argv[])
     int id_ship, id_porto, merce_scambiata;
     double tmp_load;
     struct timespec *nano_load;
-    srand(time(0));
+    srand(time(NULL));
     /*----arguments from master's execve----*/
     sh_mem_id_good = atoi(argv[1]);
     sh_mem_id_conf = atoi(argv[2]);

@@ -190,7 +190,7 @@ void main(int argc, char *argv[])
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0600);
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, 0600);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
-    srand(time(0));
+    srand(time(NULL));
     double ton_days;
 
     /*mi riconduco all'id del mio porto per matchare i dati*/
