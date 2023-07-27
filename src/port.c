@@ -168,14 +168,14 @@ void create_lots(struct good *domanda, struct good *offerta, int ton_days, int t
     }
 
     // Stampa dei risultati
-    for (int j = 0; j < type_asked; j++)
-    {
-        printf("Porto [%i], merce-type [%i], lotti domandati (%i)\n", id_porto, domanda[j].id, domanda[j].lotti);
-    }
-    for (int j = 0; j < type_offered; j++)
-    {
-        printf("Porto [%i], merce-type [%i], lotti in offerta creati (%i)\n", id_porto, offerta[j].id, offerta[j].lotti);
-    }
+    // for (int j = 0; j < type_asked; j++)
+    // {
+    //     printf("Porto [%i], merce-type [%i], lotti domandati (%i)\n", id_porto, domanda[j].id, domanda[j].lotti);
+    // }
+    // for (int j = 0; j < type_offered; j++)
+    // {
+    //     printf("Porto [%i], merce-type [%i], lotti in offerta creati (%i)\n", id_porto, offerta[j].id, offerta[j].lotti);
+    // }
 }
 /*-------FUNZIONE MAIN-------*/
 void main(int argc, char *argv[])
@@ -248,7 +248,7 @@ void main(int argc, char *argv[])
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("START SIMULAZIONE PORTI\n");
+    printf("-------START SIMULAZIONE PORTI------\n");
     /*----START SIMULAZIONE-----*/
     int i = 0;
     while (i <= ptr_shm_v_conf->so_days)
@@ -261,139 +261,6 @@ void main(int argc, char *argv[])
     // impostare un handler con una maschera che se ricevo segnale di terminazone allora maschero il segnale elimino tutto e poi termino
     // sigaction(SIGUSR1, &sa, NULL);
 }
-
-/*-----CREAZIONE DELLE MERCI --------*/
-// void create_good(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, struct good *domanda, struct good *offerta, int id_shm_domanda, int id_shm_offerta, int type_offered, int type_asked)
-// {
-//     /*scelgo il numero dei tipi di merce che il porto creerà o offrirà, IMP: off e domanda devono avere tipi di merce differente
-//         il numero e il tipo di merce rimane invariato lungo tutta la simulazione, cambiano solo le quantità generate*/
-
-//     printf("ho %i tipi di merce offerta al porto %i\n", type_offered, id_porto);
-//     printf("ho %i tipi di merce domandata al porto %i\n", type_asked, id_porto);
-
-//     /*creo le quantità dei tipi.di.merce*/
-
-//     for (int i = 0; i < type_offered; i++) /*inizializzo le merci disponibili*/
-//     {
-
-//         offerta[i].type_offered = type_offered;
-//         offerta[i].id = (rand() % ptr_shm_v_conf->so_merci); /*sceglie un id, ce ne possono essere o tutti diversi oppure si possono anche ripetere*/
-//         offerta[i].size = ptr_shm_good[offerta[i].id].size;  /* assegno il peso */
-//         offerta[i].life = ptr_shm_good[offerta[i].id].life;
-//         printf("tipi offerti dal porto[%i]: (%i), merce id: (%i), size(%i), life(%i)\n", id_porto, offerta[i].type_offered, offerta[i].id, offerta[i].size, offerta[i].life);
-//     }
-//     for (int i = 0; i < type_asked; i++)
-//     {
-//         domanda[i].type_asked = type_asked;
-//         domanda[i].id = (rand() % ptr_shm_v_conf->so_merci) + 1;
-//         for (int j = 0; j < type_offered; j++)
-//         { // verifico che l'id non sia già nelle offerte
-//             if (domanda[i].id == offerta[j].id)
-//             {
-//                 domanda[i].id = (rand() % ptr_shm_v_conf->so_merci) + 1;
-//             }
-//         }
-//         domanda[i].size = ptr_shm_good[domanda[i].id].size; /* assegno il peso */
-//         printf("tipi domandati dal porto[%i]: tipi richiesti(%i), merce id: (%i), size(%i)\n", id_porto, domanda[i].type_asked, domanda[i].id, domanda[i].size);
-//     }
-// }
-// /*----CREAZIONE DEI LOTTI-------- */
-// /*CONTROLLARE QUESTA FUNZIONE EEEE*/
-// /*cercando di utilizzare il più possibile lo spazio di SO_FILL------*/
-// void create_lotti(struct good *domanda, struct good *offerta, int ton_days, int type_offered, int type_asked, int id_porto)
-// {
-
-//     int end = 1, end_2;
-//     double ton_disp = ton_days / 2;
-//     double ton_disp2 = ton_days / 2;
-//     double ton_disp3; // terzo controllo utilizzato per la somma degli avanzi distribuiti.
-//     for (int j = 0; end == 1; j++)
-//     {
-//         if (j == type_offered) /*riparto dall'inizio*/
-//         {
-//             j = 0;
-//         }
-//         else
-//         {
-//             if (offerta[j].size < ton_disp)
-//             { /*se la size del lotto è minore di sofill allora creo un lotto, altrimenti verifico che ce ne sia almeno 1*/
-//                 offerta[j].lotti++;
-//                 ton_disp -= offerta[j].size;
-//             }
-//             else
-//             {
-//                 end_2 = 0;
-//                 for (int i = 0; (i < type_offered) && (end_2 == 0); i++)
-//                 {
-//                     if (offerta[i].size < ton_disp)
-//                     {
-//                         end_2 = 1;
-//                     }
-//                 }
-//                 end = end_2;
-//             }
-//         }
-//     }
-//     end = 1;
-//     for (int j = 0; end == 1; j++)
-//     {
-//         if (j == type_asked)
-//         {
-//             j = 0;
-//         }
-//         else
-//         {
-//             if (domanda[j].size < ton_disp2)
-//             { /*se la size del lotto è minore di sofill allora creo un lotto, altrimenti verifico che ce ne sia almeno 1*/
-//                 domanda[j].lotti++;
-//                 ton_disp2 -= domanda[j].size;
-//             }
-//             else
-//             {
-//                 end_2 = 0;
-//                 for (int j = 0; (j < type_asked) && (end_2 == 0); j++)
-//                 {
-//                     if (domanda[j].size < ton_disp2)
-//                     {
-//                         end_2 = 1;
-//                     }
-//                 }
-//                 end = end_2;
-//             }
-//         }
-//     }
-//     /*faccio un altro controllo con le quantità che posso aver avanzato nelle due distribuzioni iniziali*/
-//     ton_disp3 = ton_disp2 + ton_disp;
-//     for (int j = 0; j < type_offered; j++)
-//     {
-//         if (offerta[j].size < ton_disp3)
-//         {
-//             ton_disp3 -= offerta[j].size;
-//             offerta[j].lotti++;
-//         }
-//     }
-//     for (int j = 0; (j < type_asked); j++)
-//     {
-//         if (domanda[j].size < ton_disp2)
-//         {
-//             if (domanda[j].size < ton_disp3)
-//             {
-//                 ton_disp3 -= domanda[j].size;
-//                 domanda[j].lotti++;
-//             }
-//         }
-//     }
-//     for (int j = 0; j < type_asked; j++)
-//     {
-
-//         printf(" porto:[%i], merce-type[%i], lotti domandati (%i)\n", id_porto, domanda[j].id, domanda[j].lotti);
-//     }
-//     for (int j = 0; j < type_offered; j++)
-//     {
-
-//         printf("porto[%i], merce-type[%i], lotti in offerta creati(%i)\n", id_porto, offerta[j].id, offerta[j].lotti);
-//     }
-// }
 
 // /*problemi: - non cancello la mem condivisa le malloc e la msg ,lo devo fare quando ricevo il segnale di terminazione dal master
 // perciò devo mascherare il segnale

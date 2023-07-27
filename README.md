@@ -4,12 +4,8 @@ progect of operative sistem based on implements a simulation of the sea's tread
 
 cose importanti da vedere:
 
-- verificare la life di una merce che sia minore dei gironi della simulazione almeno può scadere
+-funzione nanotime nella ship_move nel file ship. mi da segmentation fault, non riesco a capire l'utilizzo della funzione,
+-impostare il timer alle merci che inizi ogni qualvolta che la merce viene creata
+-inserire una pipe o una msg per l'invio di messaggi tra i processi.
 
-- perchè nella nave ci sono valori diversi delle merci ? controllare le life in ship e in port
-- non vengono eliminate le memorie condividse della domanda e dell'offerta dei porti, verificare se effettovamente vengono allocate in memoria e nel caso capire se è meglio crearle nel master in modo da eliminarle piò facilmente.
-- ricollegandomi al poblema precedente forse è meglio fare un handler per ogni processo in modo che ogni processo deallochi in modo indipendente le proprie risorse
-- vengono create le merci sempre per lo stesso porto 0
-
-IMPO:
-inoltre correggere la ship nella parte di arrivo ad un porto.
+- controllare se la nave attacca al porto in modo corretto e se il criterio di scambio delle merci funziona correttamente

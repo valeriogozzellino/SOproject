@@ -43,7 +43,7 @@ int main()
 {
     /*------ora configuro le variabili-------*/
     signal(SIGINT, signalHandler);
-    int ship_cariche, ship_vuote, ship_porto, days_real;
+    int ship_cariche = 0, ship_vuote = 0, ship_porto = 0, days_real = 0;
     srand(time(NULL));
     // env_var = malloc(sizeof(struct var_conf));
     /*-----funzioni in file configuration.h----*/

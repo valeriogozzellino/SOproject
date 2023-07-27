@@ -79,7 +79,7 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
 {
     /*----utilities parameter----*/
     double tmp;
-    struct timespec *nanotime;
+    struct timespec *nanotime = malloc(sizeof(struct timespec));
     /*array distanze lo utilizzo per selezionare il porto più vicino*/
     double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
     int indice_first_port = 0;
@@ -87,7 +87,7 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     {
         /*inserisco il valore assoluto*/
         array_distance[i] = sqrt(pow(ptr_shm_port[i].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[i].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2));
-        printf("distanza porti dalla nave: %f\n", array_distance[i]);
+        // printf("distanza porti dalla nave: %f\n", array_distance[i]);
     }
     /*seleziono la distanza minore*/
     for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
@@ -107,18 +107,19 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
-    printf("x_aggiornato:%f, y_aggiornato:%f", ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
+    printf("nave:[%i]---->  x_aggiornato:%f, y_aggiornato:%f", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
     free(array_distance);
+    free(nanotime);
 }
 /*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship)
 {
     /*----utilities parameter----*/
     double tmp;
-    struct timespec *nanotime;
-    if (id_porto != ptr_shm_v_conf->so_porti - 1)
+    struct timespec *nanotime = malloc(sizeof(struct timespec));
+    if (id_porto >= ptr_shm_v_conf->so_porti - 1) // verificare la correttezza
     {
-        tmp = ((DISTANZA_P_N_) / ((double)ptr_shm_v_conf->so_speed));
+        tmp = ((sqrt(pow(ptr_shm_port[0].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[0].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))) / ((double)ptr_shm_v_conf->so_speed));
         printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
         nanotime->tv_sec = (time_t)tmp;                 /*casto a intero così prendo solo la prima parte decimale*/
         nanotime->tv_nsec = (long int)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
@@ -137,7 +138,8 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[id_porto].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[id_porto].pos_porto.y;
-    printf("posizione della nave[%i] aggiornata:(%f,%f)", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
+    printf("posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, id_porto);
+    free(nanotime);
 }
 /*--------MAIN --------*/
 void main(int argc, char *argv[])
@@ -204,6 +206,7 @@ void main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         { /* se diverso ho avuto accesso alla banchina quindi posso se possibile accedere alla shm*/
             /*INSERIRE LA MSGET PER OTTENERE DAI PORTI L'ID DELLA MEMORIA CONDIVISA*/
+            printf("sono nella banchina sto per richiedere l'accesso alla memoria condivisa\n");
             ptr_shm_ship[id_ship].location = 1; // segnalo di essere in un porto
             sops.sem_num = id_porto;
             sops.sem_op = -1;
@@ -211,7 +214,7 @@ void main(int argc, char *argv[])
             if (semop(ptr_shm_sem[1], &sops, 1) != -1)
             { /*accedo alla memoria condivisa per lo scambio della merce*/
                 /*controllo in memroia condivisa se il porto ha richiesta/domanda*/
-
+                printf("la nave è attaccata al porto, sono nell'if");
                 // mi sono collegato alla memoria condivisa del porto
                 offerta_porto = shmat(ptr_shm_port[id_porto].id_shm_offerta, NULL, 0600);
                 domanda_porto = shmat(ptr_shm_port[id_porto].id_shm_domanda, NULL, 0600);
@@ -231,7 +234,9 @@ void main(int argc, char *argv[])
                                     stiva[z].lotti--;
                                     domanda_porto[z].lotti--;
                                     ptr_shm_ship[id_ship].capacity--;
-                                    ptr_shm_port[id_porto].g_received++;
+                                    printf("sto decrementando la capacità\n");
+                                    ptr_shm_port[id_porto]
+                                        .g_received++;
                                     merce_scambiata = merce_scambiata + stiva[z].size;
                                 }
                                 printf("la domanda per questa merce ora è: %i\n", domanda_porto[z].lotti);
