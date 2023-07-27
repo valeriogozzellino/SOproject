@@ -222,14 +222,14 @@ void main(int argc, char *argv[])
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
     {
         printf("ricezione segnale nel porto\n");
-        perror("signal");
+        perror("signal\n");
         exit(1);
     }
     /*-----
     creo la merce e i lotti
     -----*/
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
-    printf("tonnellate al giorno PORTO[%i]----> [%f]", id_porto, ton_days);
+    printf("tonnellate al giorno PORTO[%i]----> [%f]\n", id_porto, ton_days);
     create_goods(ptr_shm_v_conf, ptr_shm_good, domanda, offerta, id_shm_domanda, id_shm_offerta, type_offered, type_asked, id_porto);
     /*secondo me non funziona create lotti!!!*/
     create_lots(domanda, offerta, ton_days, type_offered, type_asked, id_porto);

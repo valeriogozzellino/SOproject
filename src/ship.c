@@ -20,7 +20,7 @@
 
 /*---------PROTOTIPI DI FUNZIONI----------*/
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship);
-void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship);
+void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
 // void handle_signal_termination(int signal);
 /*---------VARIABILI GLOBALI-------------*/
 struct var_conf *ptr_shm_v_conf;
@@ -74,12 +74,15 @@ void handle_kill_signal(int signum)
 }
 
 /*----funzione di movimento della nave verso il porto più vicino----*/
-/*DA CONTROLLAREEEEEEEE*/
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship)
 {
     /*----utilities parameter----*/
-    double tmp;
+    double tmp, frac, intpart;
     struct timespec *nanotime = malloc(sizeof(struct timespec));
+    if (nanotime == NULL)
+    {
+        perror("Error nanotime malloc\n");
+    }
     /*array distanze lo utilizzo per selezionare il porto più vicino*/
     double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
     int indice_first_port = 0;
@@ -97,32 +100,39 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
             indice_first_port = i;
         }
     }
-    printf("array distanze creato: porto piu vicino:[%f],primo porto [%f]\n", array_distance[indice_first_port], array_distance[0]);
+    // printf("array distanze creato: porto piu vicino a: [%f], secondo porto piu vicino a: [%f]\n", array_distance[indice_first_port], array_distance[0]);
     id_porto = indice_first_port;
     tmp = ((array_distance[indice_first_port]) / ((double)ptr_shm_v_conf->so_speed));
-    printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-    nanotime->tv_nsec = (time_t)tmp;                /*casto a intero così prendo solo la prima parte decimale*/
-    nanotime->tv_nsec = (long int)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
+    // printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
+    //  frac = modf(tmp, &intpart);
+    nanotime->tv_sec = (time_t)tmp;               /*parte intera dei secondi*/
+    nanotime->tv_nsec = (long)(tmp - ((int)tmp)); /*parte decimale dei secondi*/
     nanosleep(nanotime, NULL);
     /*----ora devo modificare la x e la y della nave----*/
+    // printf("----TEST posizione del porto da aggiornare con la nave:[%f, %f], id porto: %i \n", ptr_shm_port[indice_first_port].pos_porto.x, ptr_shm_port[indice_first_port].pos_porto.y, id_porto);
+    // printf("----TEST posizione della nave prima di aggiornarla:[%f,%f] id della nave :%i\n", ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, id_ship);
+    // printf("sto per aggiornare la posizione della nave \n");
+
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
-    printf("nave:[%i]---->  x_aggiornato:%f, y_aggiornato:%f", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
+    // printf("nave:[%i]---->  x_aggiornato:%f, y_aggiornato:%f\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
+    //  fflush(stdout);
+    printf("------> nave %i nel porto con id: %i \n", id_ship, id_porto);
     free(array_distance);
     free(nanotime);
 }
 /*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
-void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship)
+void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship)
 {
     /*----utilities parameter----*/
     double tmp;
     struct timespec *nanotime = malloc(sizeof(struct timespec));
-    if (id_porto >= ptr_shm_v_conf->so_porti - 1) // verificare la correttezza
+    if (*id_porto >= ptr_shm_v_conf->so_porti - 1) // verificare la correttezza
     {
         tmp = ((sqrt(pow(ptr_shm_port[0].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[0].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))) / ((double)ptr_shm_v_conf->so_speed));
         printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        nanotime->tv_sec = (time_t)tmp;                 /*casto a intero così prendo solo la prima parte decimale*/
-        nanotime->tv_nsec = (long int)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
+        nanotime->tv_sec = (time_t)tmp;             /*casto a intero così prendo solo la prima parte decimale*/
+        nanotime->tv_nsec = (long)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
         nanosleep(nanotime, NULL);
         id_porto++;
     }
@@ -130,15 +140,15 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
     {
         tmp = ((DISTANZA_P_N_) / ((double)ptr_shm_v_conf->so_speed));
         printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        nanotime->tv_nsec = (time_t)tmp;                /*casto a intero così prendo solo la prima parte decimale*/
-        nanotime->tv_nsec = (long int)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
+        nanotime->tv_nsec = (time_t)tmp;            /*casto a intero così prendo solo la prima parte decimale*/
+        nanotime->tv_nsec = (long)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
         nanosleep(nanotime, NULL);
-        id_porto = 0;
+        *id_porto = 0;
     }
     /*----ora devo modificare la x e la y della nave----*/
-    ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[id_porto].pos_porto.x;
-    ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[id_porto].pos_porto.y;
-    printf("posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, id_porto);
+    ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[*id_porto].pos_porto.x;
+    ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[*id_porto].pos_porto.y;
+    printf("posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, *id_porto);
     free(nanotime);
 }
 /*--------MAIN --------*/
@@ -194,7 +204,9 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------START SIMULATION FOR THE SHIP [%i]-------\n", id_ship);
     /*eseguita la prima volta per RAGGIUNGERE IL PRIMO PORTO DALLA POSIZIONE CASUALE, SUCCESSIVAMENTE SI SPOSTERÀ DI PORTO IN PORTO*/
-    ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
+    ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, &id_porto, id_ship);
+    printf("------> la nave %i si trova al porto : %i \n", id_ship, &id_porto);
+    printf("----sono fuori la ship move first position-----\n");
     /*--------execution and ship's job------*/
     for (int i = 0;; i++)
     {
@@ -206,7 +218,7 @@ void main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         { /* se diverso ho avuto accesso alla banchina quindi posso se possibile accedere alla shm*/
             /*INSERIRE LA MSGET PER OTTENERE DAI PORTI L'ID DELLA MEMORIA CONDIVISA*/
-            printf("sono nella banchina sto per richiedere l'accesso alla memoria condivisa\n");
+            printf("la nave (%i) ha richiesto acceso alla banchina del porto (%i) sto per richiedere l'accesso alla memoria condivisa\n", id_ship, id_porto);
             ptr_shm_ship[id_ship].location = 1; // segnalo di essere in un porto
             sops.sem_num = id_porto;
             sops.sem_op = -1;
@@ -214,7 +226,7 @@ void main(int argc, char *argv[])
             if (semop(ptr_shm_sem[1], &sops, 1) != -1)
             { /*accedo alla memoria condivisa per lo scambio della merce*/
                 /*controllo in memroia condivisa se il porto ha richiesta/domanda*/
-                printf("la nave è attaccata al porto, sono nell'if");
+                printf("la nave %i, è attaccata al porto %i, sono nell'if\n", id_ship, id_porto);
                 // mi sono collegato alla memoria condivisa del porto
                 offerta_porto = shmat(ptr_shm_port[id_porto].id_shm_offerta, NULL, 0600);
                 domanda_porto = shmat(ptr_shm_port[id_porto].id_shm_domanda, NULL, 0600);
@@ -222,13 +234,13 @@ void main(int argc, char *argv[])
                 if (ptr_shm_ship[id_ship].capacity != 0)
                 {
                     merce_scambiata = 0;
-                    for (int j = 0; j < ptr_shm_v_conf->so_merci; i++)
+                    for (int j = 0; j < ptr_shm_v_conf->so_merci; j++)
                     {
-                        for (int z = 0; z < ptr_shm_port[id_porto].n_type_asked; i++)
+                        for (int z = 0; z < ptr_shm_port[id_porto].n_type_asked; z++)
                         {
                             if (stiva[j].id == domanda_porto[z].id)
                             {
-                                printf("la nave %i sta soddifando la domanda del porto %i, la domanda era %i\n", id_ship, id_porto, domanda_porto[z].lotti);
+                                printf("la nave %i sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, id_porto, stiva[j].id, domanda_porto[z].lotti);
                                 while ((stiva[z].lotti > 0) && (domanda_porto[z].lotti > 0))
                                 {
                                     stiva[z].lotti--;
@@ -249,7 +261,7 @@ void main(int argc, char *argv[])
                     nanosleep(nano_load, NULL);
                 }
                 merce_scambiata = 0;
-                for (int j = 0; (j < ptr_shm_port[id_porto].n_type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); i++)
+                for (int j = 0; (j < ptr_shm_port[id_porto].n_type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); j++)
                 {
                     for (int i = 0; i < ptr_shm_v_conf->so_merci; i++)
                     {

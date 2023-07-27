@@ -45,9 +45,8 @@ int main()
     signal(SIGINT, signalHandler);
     int ship_cariche = 0, ship_vuote = 0, ship_porto = 0, days_real = 0;
     srand(time(NULL));
-    // env_var = malloc(sizeof(struct var_conf));
-    /*-----funzioni in file configuration.h----*/
 
+    /*-----funzioni in file configuration.h----*/
     find_val(&env_var);
 
     /*-----alloco una memoria condivisa---- */
@@ -125,11 +124,11 @@ int main()
     sops.sem_op = -NUM_PROCESSI;
     semop(sem_id, &sops, 1);
     /*----START SIMULATION-----*/
+    printf("------------SONO IL MASTER DO IL VIA-----------\n");
     sops.sem_flg = 0;
     sops.sem_num = START_SIMULATION;
     sops.sem_op = NUM_PROCESSI;
     semop(sem_id, &sops, 1);
-    printf("------------SONO IL MASTER DO IL VIA-----------\n");
     /*----START TEMPO DI SIMULAZIONE, LE NAVI GURANO FINO A RICEZIONE DEL SEGNALE -----*/
     alarm(env_var.so_days);
     while (wait(&status) != -1) // quando terminano tutti i processi
@@ -270,7 +269,7 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
             printf("----EXECVP DELLA %i^NAVE  CON PID:%i-----\n", j, getpid());
 
             execvp(PATH_SHIP, args_ship);
-            perror("Execve error");
+            perror("Execve error\n");
             exit(1);
         default:
             sleep(1);
@@ -319,35 +318,35 @@ void signalHandler(int signum)
         }
         if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
         {
-            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+            printf("ERROR IN shmctl_1 sh_mem_id_conf\n");
         }
         if (shmctl(sh_mem_id_good, IPC_RMID, NULL) == -1)
         {
-            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+            printf("ERROR IN shmctl_1 sh_mem_id_conf\n");
         }
         if (shmctl(sh_mem_id_port, IPC_RMID, NULL) == -1)
         {
-            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+            printf("ERROR IN shmctl_1 sh_mem_id_conf\n");
         }
         if (shmctl(sh_mem_id_ship, IPC_RMID, NULL))
         {
-            printf("ERROR IN shmctl_1 sh_mem_id_conf");
+            printf("ERROR IN shmctl_1 sh_mem_id_conf\n");
         }
         if (shmctl(sh_mem_id_semaphore, IPC_RMID, NULL))
         {
-            printf("ERROR IN SEMCTL SEM_ID");
+            printf("ERROR IN SEMCTL SEM_ID\n");
         }
         if (semctl(sem_id, 0, IPC_RMID) == -1)
         {
-            printf("ERROR IN SEMCTL SEM_ID");
+            printf("ERROR IN SEMCTL SEM_ID\n");
         }
         if (semctl(sem_id_banchine, 0, IPC_RMID) == -1)
         {
-            printf("ERROR IN SEMCTL SEM BANCHINE");
+            printf("ERROR IN SEMCTL SEM BANCHINE\n");
         }
         if (semctl(sem_id_shm, 0, IPC_RMID) == -1)
         {
-            printf("ERROR IN SEMCTL SEM SHM");
+            printf("ERROR IN SEMCTL SEM SHM\n");
         }
         break;
     }

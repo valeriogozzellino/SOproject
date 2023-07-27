@@ -12,7 +12,7 @@
 #define PATH_SHIP "bin/ship"
 #define RD_T0_GO 1         /*processi pronti a partire*/
 #define START_SIMULATION 0 /*semaphore*/
-#define DISTANZA_P_N_ sqrt(pow(ptr_shm_port[id_porto + 1].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[id_porto + 1].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))
+#define DISTANZA_P_N_ sqrt(pow(ptr_shm_port[*id_porto + 1].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[*id_porto + 1].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))
 #define TEST_ERROR                                                \
     if (errno)                                                    \
     {                                                             \
