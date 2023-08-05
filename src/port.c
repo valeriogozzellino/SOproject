@@ -253,7 +253,6 @@ void main(int argc, char *argv[])
     int i = 0;
     while (i <= ptr_shm_v_conf->so_days)
     {
-
         sleep(1);
         create_lots(domanda, offerta, ton_days, type_offered, type_asked, id_porto); /*creazione giornaliera di lotti*/
         i++;

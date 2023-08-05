@@ -134,10 +134,10 @@ int main()
     while (wait(&status) != -1) // quando terminano tutti i processi
     {
         sleep(1); /*attende un giorno = 1sec*/
-        printf("È PASSATO UN GIORNO\n");
+        printf("master: È PASSATO UN GIORNO\n");
         days_real++;
         ship_cariche = ship_vuote = ship_porto = 0;
-        for (int i = 0; i < env_var.so_navi; i++)
+        for (int i = 0; i < env_var.so_navi; i++) // si blocca perchè le navi vanno in crash
         {
             if (ptr_shm_ship[i].location == 0)
             { // navi nel mare
@@ -155,8 +155,8 @@ int main()
                 ship_porto++;
             }
         }
-        printf("ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
-        printf("numero di giorni: %i\n", days_real);
+        printf("master: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
+        printf("master: numero di giorni: %i\n", days_real);
     }
 
     printf("sto per cancellare la mem condivisa\n");

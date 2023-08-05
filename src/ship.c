@@ -3,7 +3,6 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include "math.h"
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -16,12 +15,10 @@
 #include <signal.h>
 #include <string.h>
 #include <limits.h>
+#include "math.h"
 #include "configuration.h"
+#include "headership.h"
 
-/*---------PROTOTIPI DI FUNZIONI----------*/
-void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship);
-void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
-// void handle_signal_termination(int signal);
 /*---------VARIABILI GLOBALI-------------*/
 struct var_conf *ptr_shm_v_conf;
 struct good *ptr_shm_good;
@@ -31,6 +28,7 @@ struct ship *ptr_shm_ship;
 struct sembuf sops;
 struct good *offerta_porto;
 struct good *domanda_porto;
+int *id_porto;
 int *ptr_shm_sem;
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_ship, sh_mem_id_semaphore;
 int id_sem_banchina;
@@ -41,7 +39,7 @@ void cleanup()
     free(stiva);
     free(offerta_porto);
     free(domanda_porto);
-
+    free(id_porto);
     if (shmdt(ptr_shm_good) == -1)
     {
         perror("ptr_shm_good in port ");
@@ -74,87 +72,12 @@ void handle_kill_signal(int signum)
 }
 
 /*----funzione di movimento della nave verso il porto più vicino----*/
-void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int id_porto, int id_ship)
-{
-    /*----utilities parameter----*/
-    double tmp, frac, intpart;
-    struct timespec *nanotime = malloc(sizeof(struct timespec));
-    if (nanotime == NULL)
-    {
-        perror("Error nanotime malloc\n");
-    }
-    /*array distanze lo utilizzo per selezionare il porto più vicino*/
-    double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
-    int indice_first_port = 0;
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
-    {
-        /*inserisco il valore assoluto*/
-        array_distance[i] = sqrt(pow(ptr_shm_port[i].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[i].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2));
-        // printf("distanza porti dalla nave: %f\n", array_distance[i]);
-    }
-    /*seleziono la distanza minore*/
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
-    {                                                              // seleziono la distanza minore e l'indice del porto per la sua posizione
-        if (array_distance[indice_first_port] > array_distance[i]) // controllare l'array delle distanze e in modo da ordinarlo e salvare gli indici nell'arrai degli indici
-        {
-            indice_first_port = i;
-        }
-    }
-    // printf("array distanze creato: porto piu vicino a: [%f], secondo porto piu vicino a: [%f]\n", array_distance[indice_first_port], array_distance[0]);
-    id_porto = indice_first_port;
-    tmp = ((array_distance[indice_first_port]) / ((double)ptr_shm_v_conf->so_speed));
-    // printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-    //  frac = modf(tmp, &intpart);
-    nanotime->tv_sec = (time_t)tmp;               /*parte intera dei secondi*/
-    nanotime->tv_nsec = (long)(tmp - ((int)tmp)); /*parte decimale dei secondi*/
-    nanosleep(nanotime, NULL);
-    /*----ora devo modificare la x e la y della nave----*/
-    // printf("----TEST posizione del porto da aggiornare con la nave:[%f, %f], id porto: %i \n", ptr_shm_port[indice_first_port].pos_porto.x, ptr_shm_port[indice_first_port].pos_porto.y, id_porto);
-    // printf("----TEST posizione della nave prima di aggiornarla:[%f,%f] id della nave :%i\n", ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, id_ship);
-    // printf("sto per aggiornare la posizione della nave \n");
 
-    ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
-    ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
-    // printf("nave:[%i]---->  x_aggiornato:%f, y_aggiornato:%f\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
-    //  fflush(stdout);
-    printf("------> nave %i nel porto con id: %i \n", id_ship, id_porto);
-    free(array_distance);
-    free(nanotime);
-}
-/*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
-void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship)
-{
-    /*----utilities parameter----*/
-    double tmp;
-    struct timespec *nanotime = malloc(sizeof(struct timespec));
-    if (*id_porto >= ptr_shm_v_conf->so_porti - 1) // verificare la correttezza
-    {
-        tmp = ((sqrt(pow(ptr_shm_port[0].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[0].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))) / ((double)ptr_shm_v_conf->so_speed));
-        printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        nanotime->tv_sec = (time_t)tmp;             /*casto a intero così prendo solo la prima parte decimale*/
-        nanotime->tv_nsec = (long)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
-        nanosleep(nanotime, NULL);
-        id_porto++;
-    }
-    else
-    {
-        tmp = ((DISTANZA_P_N_) / ((double)ptr_shm_v_conf->so_speed));
-        printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        nanotime->tv_nsec = (time_t)tmp;            /*casto a intero così prendo solo la prima parte decimale*/
-        nanotime->tv_nsec = (long)(tmp - (int)tmp); /*posso farlo per avere solo la parte decimale? */
-        nanosleep(nanotime, NULL);
-        *id_porto = 0;
-    }
-    /*----ora devo modificare la x e la y della nave----*/
-    ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[*id_porto].pos_porto.x;
-    ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[*id_porto].pos_porto.y;
-    printf("posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, *id_porto);
-    free(nanotime);
-}
 /*--------MAIN --------*/
 void main(int argc, char *argv[])
 {
-    int id_ship, id_porto, merce_scambiata;
+    int id_ship, merce_scambiata;
+    id_porto = malloc(sizeof(int));
     double tmp_load;
     struct timespec *nano_load;
     srand(time(NULL));
@@ -204,84 +127,113 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------START SIMULATION FOR THE SHIP [%i]-------\n", id_ship);
     /*eseguita la prima volta per RAGGIUNGERE IL PRIMO PORTO DALLA POSIZIONE CASUALE, SUCCESSIVAMENTE SI SPOSTERÀ DI PORTO IN PORTO*/
-    ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, &id_porto, id_ship);
-    printf("------> la nave %i si trova al porto : %i \n", id_ship, &id_porto);
-    printf("----sono fuori la ship move first position-----\n");
+    ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
+    printf("------> la nave %i si trova al porto : %i \n", id_ship, *id_porto);
     /*--------execution and ship's job------*/
     for (int i = 0;; i++)
     {
-        printf("sono al porto con posizione: pos_porto[%f, %f], pos_ship[%f,%f]\n", ptr_shm_port[id_porto].pos_porto.x, ptr_shm_port[id_porto].pos_porto.y, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y);
+        // PRINT DI VERIFICA SE LA NAVE E IL PORTO ABBIAMO LE POSIAZIONI CHE COMBACINO
+        printf("SHIP: la nave [%i] --RICHIEDE-- l'accesso  alla banchina del porto[%i]\n", id_ship, *id_porto);
         /*controllo se il porto ha banchine libere altrimenti cambio porto*/
-        sops.sem_num = id_porto;
+        sops.sem_num = *id_porto;
         sops.sem_op = -1;
         sops.sem_flg = IPC_NOWAIT;
+        printf("SHIP: la nave [%i] --HA OTTENUTO-- l'accesso alla banchina del porto [%i]\n", id_ship, *id_porto);
+        /**
+         *
+         */
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         { /* se diverso ho avuto accesso alla banchina quindi posso se possibile accedere alla shm*/
             /*INSERIRE LA MSGET PER OTTENERE DAI PORTI L'ID DELLA MEMORIA CONDIVISA*/
-            printf("la nave (%i) ha richiesto acceso alla banchina del porto (%i) sto per richiedere l'accesso alla memoria condivisa\n", id_ship, id_porto);
+            printf("SHIP: la nave (%i) sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 1; // segnalo di essere in un porto
-            sops.sem_num = id_porto;
+            sops.sem_num = *id_porto;
             sops.sem_op = -1;
             sops.sem_flg = 0;
             if (semop(ptr_shm_sem[1], &sops, 1) != -1)
             { /*accedo alla memoria condivisa per lo scambio della merce*/
                 /*controllo in memroia condivisa se il porto ha richiesta/domanda*/
-                printf("la nave %i, è attaccata al porto %i, sono nell'if\n", id_ship, id_porto);
+                printf("SHIP: la nave %i, è attaccata al porto %i, sta per effettuare scambi di merce\n", id_ship, *id_porto);
                 // mi sono collegato alla memoria condivisa del porto
-                offerta_porto = shmat(ptr_shm_port[id_porto].id_shm_offerta, NULL, 0600);
-                domanda_porto = shmat(ptr_shm_port[id_porto].id_shm_domanda, NULL, 0600);
+                offerta_porto = shmat(ptr_shm_port[*id_porto].id_shm_offerta, NULL, 0600);
+                domanda_porto = shmat(ptr_shm_port[*id_porto].id_shm_domanda, NULL, 0600);
                 // verifico la domanda, poi prendo la domanda per svuotare la nave
-                if (ptr_shm_ship[id_ship].capacity != 0)
+                merce_scambiata = 0;
+                if (ptr_shm_ship[id_ship].capacity != ptr_shm_v_conf->so_capacity) // VERIFICO CHE LA MERCER ABBIA ANCORA SPAZIO IN STIVa
                 {
-                    merce_scambiata = 0;
                     for (int j = 0; j < ptr_shm_v_conf->so_merci; j++)
                     {
-                        for (int z = 0; z < ptr_shm_port[id_porto].n_type_asked; z++)
+                        printf("-------1------\n");
+                        for (int z = 0; z < ptr_shm_port[*id_porto].n_type_asked; z++) // VERIFICARE QUESTI DUE CICLI SONO POCO EFFICIENTI,SAREBBE PIU CORRETTO METTERE UNA BOOLEAN CHE SE TROVA LA MERCE SI FERMA??
                         {
+                            printf("-------2------\n");
+
                             if (stiva[j].id == domanda_porto[z].id)
                             {
-                                printf("la nave %i sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, id_porto, stiva[j].id, domanda_porto[z].lotti);
-                                while ((stiva[z].lotti > 0) && (domanda_porto[z].lotti > 0))
+                                while ((stiva[j].lotti > 0) && (domanda_porto[z].lotti > 0))
                                 {
-                                    stiva[z].lotti--;
+                                    printf("la nave %i sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[j].id, domanda_porto[z].lotti);
+                                    stiva[j].lotti--;
                                     domanda_porto[z].lotti--;
-                                    ptr_shm_ship[id_ship].capacity--;
-                                    printf("sto decrementando la capacità\n");
-                                    ptr_shm_port[id_porto]
-                                        .g_received++;
-                                    merce_scambiata = merce_scambiata + stiva[z].size;
+                                    ptr_shm_ship[id_ship].capacity += domanda_porto[z].size; // di quanto decremento la Capacity della size o del LOtto?
+                                    printf("sto aumentando la capacita di: %i\n", domanda_porto[z].size);
+                                    ptr_shm_port[*id_porto].g_received++;
+                                    merce_scambiata = merce_scambiata + stiva[j].size;
                                 }
                                 printf("la domanda per questa merce ora è: %i\n", domanda_porto[z].lotti);
                             }
                         }
                     }
-                    tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-                    nano_load->tv_sec = (int)tmp_load;
-                    nano_load->tv_nsec = (long int)(tmp_load - (int)tmp_load);
-                    nanosleep(nano_load, NULL);
+                    // ERRORE QUI CAPIRE PERCHééééé
+                    // tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
+                    // time_t tmp_seconds = (time_t)tmp_load;
+                    // long tmp_nanoseconds = (long)((tmp_load - tmp_seconds) * 1e9);
+                    // nano_load->tv_sec = tmp_seconds;
+                    // nano_load->tv_nsec = tmp_nanoseconds;
+                    // nanosleep(nano_load, NULL);
                 }
                 merce_scambiata = 0;
-                for (int j = 0; (j < ptr_shm_port[id_porto].n_type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); j++)
+                if (ptr_shm_ship[id_ship].capacity != 0) // se la nave ha ancora spazio verifico se ci sono merci che ci stanno
                 {
-                    for (int i = 0; i < ptr_shm_v_conf->so_merci; i++)
+
+                    printf("-------4------\n");
+                    // per ogni merce offerta nel porto oppure fino a quando la stiva ha spazio
+                    for (int i = 0; i < ptr_shm_v_conf->so_merci; i++) // verifico per ogni id della merce
                     {
-                        if (offerta_porto[j].id == stiva[i].id)
+                        printf("-------5------\n");
+                        for (int j = 0; j < ptr_shm_port[*id_porto].n_type_offered; j++)
                         {
-                            while ((ptr_shm_ship[id_ship].capacity != ptr_shm_v_conf->so_capacity) && (offerta_porto[j].id > 0))
+
+                            if (offerta_porto[j].id == stiva[i].id) // se sono sulla stessa merce e l'offerta è maggiore di zero
                             {
-                                offerta_porto[j].lotti--;
-                                stiva[i].lotti++;
-                                ptr_shm_ship[id_ship].capacity++;
-                                ptr_shm_port[id_porto].g_send++;
-                                merce_scambiata = merce_scambiata + stiva[i].size;
+                                printf("-------6------\n");
+
+                                while (((ptr_shm_ship[id_ship].capacity - offerta_porto[j].size) > 0) && offerta_porto[j].lotti > 0) // entro fino a quando i lotti di quegli id ci stanno nella stiva
+                                {
+                                    printf("-------7------\n"); // rimane in looop quiiii----------------------------
+
+                                    offerta_porto[j].lotti--;
+                                    stiva[i].lotti++;
+                                    ptr_shm_ship[id_ship].capacity -= offerta_porto[j].size;
+                                    ptr_shm_port[*id_porto].g_send++;
+                                    merce_scambiata = merce_scambiata + offerta_porto[j].size;
+                                }
+                                printf("------------8--------\n");
                             }
                         }
+                        printf("--------9-------\n");
                     }
+                    printf("---------10--------\n");
+                    // ERRORE QUIIIIIIIIIIIIII capire perchè
+
+                    // tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
+                    // time_t tmp_seconds = (time_t)tmp_load;
+                    // long tmp_nanoseconds = fabs((long)((tmp_load - tmp_seconds) * 1e9));
+                    // nano_load->tv_sec = tmp_seconds;
+                    // nano_load->tv_nsec = tmp_nanoseconds;
+                    // nanosleep(nano_load, NULL);
+                    printf("---------11---------\n");
                 }
-                tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-                nano_load->tv_sec = (int)tmp_load;
-                nano_load->tv_nsec = (long int)(tmp_load - (int)tmp_load);
-                nanosleep(nano_load, NULL);
 
                 shmdt(offerta_porto);
                 shmdt(domanda_porto);
@@ -291,13 +243,16 @@ void main(int argc, char *argv[])
                 semop(ptr_shm_sem[1], &sops, 1); /*aggiungo al semaforo della memoria condivisa*/
                 printf("ho terminato di interagire con il porto, ora rilascio la risorsa della memoria condivisa\n");
             }
-            sops.sem_num = id_porto;
+            sops.sem_num = *id_porto;
             sops.sem_op = 1;
             sops.sem_flg = 0;
             semop(ptr_shm_sem[0], &sops, 1);
             ptr_shm_ship[id_ship].location = 0;
             printf("la nave %i ha lasciato il porto\n", getpid());
         }
+        printf("SHIP:  la nave (%i) sta lasciando un porto\n", id_ship);
+        printf("TEST sto entrando nella ship move to\n");
+        ptr_shm_ship[id_ship].location = 0;
         ship_move_to(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     }
 }

@@ -33,8 +33,8 @@ struct var_conf
     int so_speed;
     int so_loadspeed;
     int so_fill;
-    int so_banchine;
-    int so_capacity;
+    int so_banchine; //nave non aspetta che la banchina sia libera
+    int so_capacity; 
 };
 
 struct good

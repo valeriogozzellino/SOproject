@@ -14,8 +14,8 @@ build/%.o: src/%.c $(COMMON_DEPS)
 bin/master: build/master.o build/configuration.o $(COMMON_DEPS)
 	$(CC) -o bin/master build/configuration.o build/master.o -lm
 
-bin/ship: build/ship.o build/configuration.o $(COMMON_DEPS)
-	$(CC) -o bin/ship build/configuration.o build/ship.o -lm
+bin/ship: build/ship.o build/configuration.o build/headership.o $(COMMON_DEPS)
+	$(CC) -o bin/ship build/configuration.o build/headership.o build/ship.o -lm
 
 bin/port: build/port.o build/configuration.o $(COMMON_DEPS)
 	$(CC) -o bin/port build/configuration.o build/port.o -lm
