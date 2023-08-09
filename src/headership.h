@@ -20,5 +20,5 @@
 
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
-
-#endif /*__HEADER_H */
+void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, int id_ship, struct good *stiva);
+#endif /*__HEADERSHIP_H */

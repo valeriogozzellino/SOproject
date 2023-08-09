@@ -15,117 +15,162 @@
 #include <limits.h>
 #include <math.h>
 #include "configuration.h"
-struct port *porto;
-struct ship *nave;
-/*
- */
-void prova_scambio()
+#include "headerport.h"
+#define ACCESS 0600
+/*----VARIABILI GLOBALI----*/
+int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore;
+struct port *ptr_shm_porto; // ptr to shared memroy info porto
+struct good *ptr_shm_good;  // ptr to shared mem for info good
+struct good **domanda_days; // per ogni giorno vengono create le merci, array di array in cui il primo rafppresenta il giorno e il secondo le merci
+struct good **offerta_days;
+struct var_conf *ptr_shm_v_conf;
+struct sembuf sops;
+struct sigaction sa;
+int *ptr_shm_sem;
+int id_porto;
+int id_shm_domanda, id_shm_offerta;
+
+// void handle_signal_termination(int signal);
+// Funzione per liberare la memoria condivisa
+void cleanup()
 {
 
-    if (semop(ptr_shm_sem[1], &sops, 1) != -1)
-    { /*accedo alla memoria condivisa per lo scambio della merce*/
-        /*controllo in memroia condivisa se il porto ha richiesta/domanda*/
-        printf("SHIP: la nave %i, è attaccata al porto %i, sta per effettuare scambi di merce\n", id_ship, *id_porto);
-        // mi sono collegato alla memoria condivisa del porto
-        offerta_porto = shmat(ptr_shm_port[*id_porto].id_shm_offerta, NULL, 0600);
-        domanda_porto = shmat(ptr_shm_port[*id_porto].id_shm_domanda, NULL, 0600);
-        // verifico la domanda, poi prendo la domanda per svuotare la nave
-        merce_scambiata = 0;
-        if (ptr_shm_ship[id_ship].capacity != 0) // VERIFICO CHE LA MERCER ABBIA ANCORA SPAZIO IN STIVA
+    // Deallocazione della memoria condivisa
+    if (id_shm_offerta != -1)
+    {
+        if (shmctl(id_shm_offerta, IPC_RMID, NULL) == -1)
         {
-            for (int j = 0; (j < ptr_shm_port[*id_porto].n_type_offered) || (ptr_shm_ship[id_ship].capacity == ptr_shm_v_conf->so_capacity); j++)
-            {
-                for (int i = 0; i < ptr_shm_v_conf->so_merci; i++)
-                {
-                    if (offerta_porto[j].id == stiva[i].id)
-                    {
-                        while ((ptr_shm_ship[id_ship].capacity != ptr_shm_v_conf->so_capacity) && (offerta_porto[j].id > 0))
-                        {
-                            offerta_porto[j].lotti--;
-                            stiva[i].lotti++;
-                            ptr_shm_ship[id_ship].capacity++;
-                            ptr_shm_port[*id_porto].g_send++;
-                            merce_scambiata = merce_scambiata + stiva[i].size;
-                        }
-                    }
-                }
-            }
+            perror("shmctl in cleanup offerta port");
+            exit(1);
         }
-        for (int j = 0; j < ptr_shm_v_conf->so_merci; j++)
-        {
-            for (int z = 0; z < ptr_shm_port[*id_porto].n_type_asked; z++)
-            {
-                if (stiva[j].id == domanda_porto[z].id)
-                {
-                    printf("la nave %i sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[j].id, domanda_porto[z].lotti);
-                    while ((stiva[z].lotti > 0) && (domanda_porto[z].lotti > 0))
-                    {
-                        stiva[z].lotti--;
-                        domanda_porto[z].lotti--;
-                        ptr_shm_ship[id_ship].capacity--;
-                        printf("sto decrementando la capacità\n");
-                        ptr_shm_port[*id_porto].g_received++;
-                        merce_scambiata = merce_scambiata + stiva[z].size;
-                    }
-                    printf("la domanda per questa merce ora è: %i\n", domanda_porto[z].lotti);
-                }
-            }
-        }
-        tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-        nano_load->tv_sec = (int)tmp_load;
-        nano_load->tv_nsec = (long int)(tmp_load - (int)tmp_load);
-        nanosleep(nano_load, NULL);
+        printf("Memoria condivisa deallocata.\n");
     }
-    tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-    nano_load->tv_sec = (int)tmp_load;
-    nano_load->tv_nsec = (long int)(tmp_load - (int)tmp_load);
-    nanosleep(nano_load, NULL);
+    if (id_shm_domanda != -1)
+    {
+        if (shmctl(id_shm_domanda, IPC_RMID, NULL) == -1)
+        {
+            perror("shmctl in cleanup  domanda port");
+            exit(1);
+        }
+        printf("Memoria condivisa deallocata.\n");
+    }
 
-    shmdt(offerta_porto);
-    shmdt(domanda_porto);
-    sops.sem_num = 0;
-    sops.sem_op = 1;
-    sops.sem_flg = 0;
-    semop(ptr_shm_sem[1], &sops, 1); /*aggiungo al semaforo della memoria condivisa*/
-    printf("ho terminato di interagire con il porto, ora rilascio la risorsa della memoria condivisa\n");
+    if (shmdt(ptr_shm_good) == -1)
+    {
+        perror("ptr_shm_good in port ");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_v_conf) == -1)
+    {
+        perror("ptr_shm_conf in port");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_porto) == -1)
+    {
+        perror("ptr_shm_porto in port");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_sem) == -1)
+    {
+        perror("ptr_shm_sem in port");
+        exit(1);
+    }
+
+    exit(0);
 }
-}
-int main()
+
+// Handler per il segnale di KILL
+void handle_kill_signal(int signum)
 {
+    printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
+    cleanup();
+}
+
+/*-------FUNZIONE MAIN-------*/
+void main(int argc, char *argv[])
+{
+    /*----make a connection with master's sh memory---*/
+    sh_mem_id_good = atoi(argv[1]);
+    sh_mem_id_conf = atoi(argv[2]);
+    sh_mem_id_port = atoi(argv[3]);
+    sh_mem_id_semaphore = atoi(argv[4]);
+    // printf("SONO NEL PORTO : shm_id_good[%i], sh_mem_id_conf[%i], sh_mem_id_port[%i], sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
+    ptr_shm_good = shmat(sh_mem_id_good, NULL, ACCESS);
+    ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, ACCESS);
+    ptr_shm_porto = shmat(sh_mem_id_port, NULL, ACCESS);
+    ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, ACCESS);
     srand(time(NULL));
-    struct var_conf ptr_shm_v_conf;
-    ptr_shm_v_conf.so_speed = 3;
-    ptr_shm_v_conf.so_porti = 5;
-    porto = malloc(sizeof(struct port) * 5);
-    nave = malloc(sizeof(struct ship) * 3);
-    // inserisco gli id:
-    for (int i = 0; i < 5; i++)
+    double ton_days;
+
+    /*mi riconduco all'id del mio porto per matchare i dati*/
+    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
-        porto[i].id_port = i;
-        porto[i].pos_porto.x = rand() % 10;
-        porto[i].pos_porto.y = rand() % 10;
-        printf("la posizione del porto[%i] è:[%f,%f]\n", i, porto[i].pos_porto.x, porto[i].pos_porto.y);
-    }
-    for (int i = 0; i < 3; i++)
-    {
-        nave[i].id_ship = i;
-        nave[i].pos_ship.x = rand() % 10;
-        nave[i].pos_ship.y = rand() % 10;
-        printf("la posizione della nave[%i] è:[%f,%f]\n", i, nave[i].pos_ship.x, nave[i].pos_ship.y);
-    }
-    port_sorting(&ptr_shm_v_conf, porto);
-    for (int i = 0; i < 3; i++)
-    {
-        ship_move_first_position(nave, porto, &ptr_shm_v_conf, 0, nave[i].id_ship);
-    }
-    printf("finito la ship move della prima posizione\n");
-    for (int i = 0; i < 7; i++)
-    {
-        for (int j = 0; j < 3; j++)
+        if (getpid() == ptr_shm_porto[i].pid)
         {
-            ship_move_to(nave, porto, &ptr_shm_v_conf, i, nave[j].id_ship);
+            id_porto = i;
+            printf("PORTO %i: ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
         }
     }
-    free(porto);
-    free(nave);
+    printf("ID_PORTO [%i]\n", id_porto);
+    int type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
+    int type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
+    ptr_shm_porto[id_porto].n_type_asked = type_asked;
+    ptr_shm_porto[id_porto].n_type_offered = type_offered;
+    /*
+    creo una memoria condivisa per organizzare domanda e offerta-per ogni porto
+    */
+    id_shm_offerta = shmget(IPC_PRIVATE, (sizeof(struct good)) * ptr_shm_v_conf->so_days, ACCESS); // creo un array di offerte per ogni giorno
+    id_shm_domanda = shmget(IPC_PRIVATE, (sizeof(struct good)) * ptr_shm_v_conf->so_days, ACCESS);
+    /**salvo il memoria condivisa  il numero dei tipi offerti utilizzati nello scambio di merce con le navi*/
+    ptr_shm_porto[id_porto].id_shm_offerta = id_shm_offerta;
+    ptr_shm_porto[id_porto].id_shm_domanda = id_shm_domanda;
+    /*memoria condivisa per offerta e domanda generate ogni giorno, visibile alle navi*/
+    offerta_days = shmat(id_shm_offerta, NULL, ACCESS);
+    domanda_days = shmat(id_shm_domanda, NULL, ACCESS);
+    for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
+    {
+        offerta_days[i] = malloc(sizeof(struct good) * type_offered);
+        domanda_days[i] = malloc(sizeof(struct good) * type_asked);
+    }
+    /*imposto l'handler*/
+    if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
+    {
+        printf("ricezione segnale nel porto\n");
+        perror("signal\n");
+        exit(1);
+    }
+    /*-----
+    creo la merce e i lotti
+    -----*/
+    ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
+    printf("PORTO %i: tonnellate al giorno----> [%f]\n", id_porto, ton_days);
+    create_goods(ptr_shm_v_conf, ptr_shm_good, domanda_days, offerta_days, id_shm_domanda, id_shm_offerta, type_offered, type_asked, id_porto);
+    /*secondo me non funziona create lotti!!!*/
+    create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, ptr_shm_v_conf->days_real);
+    /*
+    creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
+    */
+
+    /*---------------------------------------------------------------------------*/
+    printf("PORTO %i: sto per avvertire il master di essere pronto\n", id_porto);
+    sops.sem_flg = 0;
+    sops.sem_num = RD_T0_GO;
+    sops.sem_op = 1;
+    semop(ptr_shm_sem[2], &sops, 1); // attendo master che mi dia il via quando tutti i px hanno aggiunto 1 al ready to go
+    printf("-----PORTO %i: CONFIGURATO, PRONTO ALLA SIMULAZIONE-----\n", id_porto);
+    /*------------*/
+    sops.sem_num = START_SIMULATION;
+    sops.sem_op = -1;
+    semop(ptr_shm_sem[2], &sops, 1);
+    printf("-------PORTO %i: START SIMULAZIONE------\n", id_porto);
+    /*----START SIMULAZIONE-----*/
+    int i = 0;
+    while (i <= ptr_shm_v_conf->so_days)
+    {
+        sleep(1);
+        create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, ptr_shm_v_conf->days_real); /*creazione giornaliera di lotti*/
+        i++;
+    }
+    // impostare un handler con una maschera che se ricevo segnale di terminazone allora maschero il segnale elimino tutto e poi termino
+    // sigaction(SIGUSR1, &sa, NULL);
 }

@@ -20,12 +20,8 @@
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship)
 {
     /*----utilities parameter----*/
-    double tmp, frac, intpart;
-    struct timespec *nanotime = malloc(sizeof(struct timespec));
-    if (nanotime == NULL)
-    {
-        perror("Error nanotime malloc\n");
-    }
+    double tmp_shift, frac, intpart;
+    struct timespec nanotime;
     /*array distanze lo utilizzo per selezionare il porto più vicino*/
     double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
     int indice_first_port = 0;
@@ -45,11 +41,10 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     }
     // printf("array distanze creato: porto piu vicino a: [%f], secondo porto piu vicino a: [%f]\n", array_distance[indice_first_port], array_distance[0]);
     *id_porto = indice_first_port;
-    // tmp = ((array_distance[indice_first_port]) / ((double)ptr_shm_v_conf->so_speed));
-
-    // nanotime->tv_sec = (time_t)tmp;                     /*parte intera dei secondi*/
-    // nanotime->tv_nsec = fabs((long)(tmp - ((int)tmp))); /*parte decimale dei secondi*/
-    // nanosleep(nanotime, NULL);
+    tmp_shift = ((array_distance[indice_first_port]) / ((double)ptr_shm_v_conf->so_speed));
+    nanotime.tv_sec = (int)tmp_shift;                             /*take seconds*/
+    nanotime.tv_nsec = (tmp_shift - (int)tmp_shift) * 1000000000; /*take nanoseconds*/
+    nanosleep(&nanotime, NULL);
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
@@ -57,36 +52,39 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     //  fflush(stdout);
     printf("------> nave %i nel porto con id: %i \n", id_ship, *id_porto);
     free(array_distance);
-    free(nanotime);
 }
 /*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship)
 {
     /*----utilities parameter----*/
     printf("nave: ------TEST sono nella ship move to\n");
-    double tmp;
-    struct timespec *nanotime = malloc(sizeof(struct timespec));
+    double tmp_shift;
+    struct timespec nanotime;
     if (*id_porto >= ptr_shm_v_conf->so_porti - 1) // verificare la correttezza
     {
-        // tmp = ((sqrt(pow(ptr_shm_port[0].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[0].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))) / ((double)ptr_shm_v_conf->so_speed));
-        // printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        // nanotime->tv_sec = (time_t)tmp;                   /*casto a intero così prendo solo la prima parte decimale*/
-        // nanotime->tv_nsec = fabs((long)(tmp - (int)tmp)); /*posso farlo per avere solo la parte decimale? */
-        // nanosleep(nanotime, NULL);
+        tmp_shift = ((sqrt(pow(ptr_shm_port[0].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[0].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))) / ((double)ptr_shm_v_conf->so_speed));
+        nanotime.tv_sec = (int)tmp_shift;                             /*take seconds*/
+        nanotime.tv_nsec = (tmp_shift - (int)tmp_shift) * 1000000000; /*take nanoseconds*/
+        nanosleep(&nanotime, NULL);
         *id_porto = 0;
     }
     else
     {
-        // tmp = ((DISTANZA_P_N_) / ((double)ptr_shm_v_conf->so_speed));
-        // printf("la nave farà un viaggio in mare che durerà %f secondi\n", tmp);
-        // nanotime->tv_nsec = (time_t)tmp;                  /*casto a intero così prendo solo la prima parte decimale*/
-        // nanotime->tv_nsec = fabs((long)(tmp - (int)tmp)); /*valore assoluto */
-        // nanosleep(nanotime, NULL);
+        tmp_shift = ((DISTANZA_P_N_) / ((double)ptr_shm_v_conf->so_speed));
+        nanotime.tv_sec = (int)tmp_shift;                             /*take seconds*/
+        nanotime.tv_nsec = (tmp_shift - (int)tmp_shift) * 1000000000; /*take nanoseconds*/
+        nanosleep(&nanotime, NULL);
         (*id_porto)++;
     }
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[*id_porto].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[*id_porto].pos_porto.y;
-    printf("posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, *id_porto);
-    free(nanotime);
+    printf("nave: posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, *id_porto);
+}
+void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, int id_ship, struct good *stiva){
+    for(int i=0; i<ptr_shm_v_conf->so_merci; i++){
+        if(stiva[i].life== ptr_shm_v_conf->days_real){
+            stiva[i].lotti=0
+        }
+    }
 }

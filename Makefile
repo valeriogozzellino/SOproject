@@ -17,10 +17,10 @@ bin/master: build/master.o build/configuration.o $(COMMON_DEPS)
 bin/ship: build/ship.o build/configuration.o build/headership.o $(COMMON_DEPS)
 	$(CC) -o bin/ship build/configuration.o build/headership.o build/ship.o -lm
 
-bin/port: build/port.o build/configuration.o $(COMMON_DEPS)
-	$(CC) -o bin/port build/configuration.o build/port.o -lm
+bin/port: build/port.o build/configuration.o build/headerport.o $(COMMON_DEPS)
+	$(CC) -o bin/port build/configuration.o build/port.o build/headerport.o -lm
 
-bin/file-prova: build/file-prova.o build/configuration.o $(COMMON_DEPS)
-	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o -lm 
+bin/file-prova: build/file-prova.o build/configuration.o build/headerport.o $(COMMON_DEPS)
+	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o build/headerport.o -lm 
 clean: 
 	rm -f build/* bin/*

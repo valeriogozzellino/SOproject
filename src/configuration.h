@@ -23,6 +23,7 @@
 struct var_conf
 {
     int so_days;
+    int days_real;
     int so_navi;
     int so_porti;
     int so_merci;
@@ -33,8 +34,8 @@ struct var_conf
     int so_speed;
     int so_loadspeed;
     int so_fill;
-    int so_banchine; //nave non aspetta che la banchina sia libera
-    int so_capacity; 
+    int so_banchine; // nave non aspetta che la banchina sia libera
+    int so_capacity;
 };
 
 struct good
@@ -42,11 +43,9 @@ struct good
     int id;   /*numero che identifica la merce*/
     int size; /*size determinata tra 1<x<SO_SIZE generata nel master e assegnata ai porti, ogni porto diversa*/
     int lotti;
-    int life;           /*cutdown alla scadenza, un intero che utilizzo come allarme per segnalare che una merce è scaduta*/
-    int ritirata;       /*settato a 1 se una nave ha preo questo carico*/
-    int consegnata;     /*settato a 1 se la merce è consegnata al porto*/
-    clock_t start_time; /*timer della scadenza della merce*/
-    int timer;
+    int life;       /*la scadenza della merce sarà fatta sommando i giorni che sono passati con quelli in cui non è scaduta ad esempio se si conserva 10 giorni... guardare README*/
+    int ritirata;   /*settato a 1 se una nave ha preo questo carico*/
+    int consegnata; /*settato a 1 se la merce è consegnata al porto*/
 };
 
 /*----position of object in the map-----*/

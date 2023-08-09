@@ -31,6 +31,7 @@ int *ptr_shm_semaphore;
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_ship, sh_mem_id_semaphore; // id shared memory
 int sem_id_banchine, sem_id_shm, sem_id;                                                 // semafori
 int status;
+int active_process; // processi attivi durante la simulazione
 
 /*------------prototipi di funzioni-----------*/
 void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf);
@@ -43,6 +44,7 @@ int main()
 {
     /*------ora configuro le variabili-------*/
     signal(SIGINT, signalHandler);
+    signal(SIGALRM, signalHandler);
     int ship_cariche = 0, ship_vuote = 0, ship_porto = 0, days_real = 0;
     srand(time(NULL));
 
@@ -114,7 +116,6 @@ int main()
     printf("sono il master sono uscito dalla port sorting\n");
     /*-----creazione delle navi-----*/
     create_ship(ptr_shm_ship, ptr_shm_v_conf);
-
     printf("sono il master sono uscito dalla create ship\n");
 
     /*----ALL PROCESS CREATED-----*/
@@ -129,15 +130,18 @@ int main()
     sops.sem_num = START_SIMULATION;
     sops.sem_op = NUM_PROCESSI;
     semop(sem_id, &sops, 1);
+    printf("MASTER: HO RILASCIATO I PROCESSI\n");
     /*----START TEMPO DI SIMULAZIONE, LE NAVI GURANO FINO A RICEZIONE DEL SEGNALE -----*/
-    alarm(env_var.so_days);
-    while (wait(&status) != -1) // quando terminano tutti i processi
+    alarm(env_var.so_days); //
+    printf("MASTER: HO ATTIVATO L'ALARM\n");
+    active_process = NUM_PROCESSI;
+    while (active_process > 0) // quando terminano tutti i processi (wait(&status) != -1)
     {
         sleep(1); /*attende un giorno = 1sec*/
-        printf("master: È PASSATO UN GIORNO\n");
-        days_real++;
+        printf("----------MASTER: È PASSATO UN GIORNO---------\n");
+        ptr_shm_v_conf->days_real++;
         ship_cariche = ship_vuote = ship_porto = 0;
-        for (int i = 0; i < env_var.so_navi; i++) // si blocca perchè le navi vanno in crash
+        for (int i = 0; i < env_var.so_navi; i++)
         {
             if (ptr_shm_ship[i].location == 0)
             { // navi nel mare
@@ -155,12 +159,26 @@ int main()
                 ship_porto++;
             }
         }
-        printf("master: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
-        printf("master: numero di giorni: %i\n", days_real);
+        printf("MASTER: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
+        printf("MASTER: numero di giorni: %i\n", ptr_shm_v_conf->days_real++);
+        /**
+         * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
+         */
+        for (int i = 0; i < env_var.so_navi; i++)
+        {
+            ptr_shm_ship[i].pid > 0 ?: active_process--;
+        }
+        for (int i = 0; i < env_var.so_porti; i++)
+        {
+            ptr_shm_port[i].pid > 0 ?: active_process--;
+            printf("MASTER: il porto %i ha RICEVUTO[%i lotti] e SPEDITO[%i lotti] \n", ptr_shm_port[i].g_received, ptr_shm_port[i].g_send);
+        }
     }
 
     printf("sto per cancellare la mem condivisa\n");
     /*--------TERMINAZIONE DELLA SIMULAZIONE-----------------*/
+    signalHandler(2); // eliminazione e kill dei processi
+
     /*------elimino la memoria condivisa-----*/
     if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
     {
@@ -285,7 +303,7 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
 void signalHandler(int signum)
 {
 
-    printf("Ricevuto segnale SIGINT. Eseguo la pulizia...\n");
+    printf("------Ricevuto segnale al MASTER. Eseguo la pulizia-------\n");
 
     switch (signum)
     {
