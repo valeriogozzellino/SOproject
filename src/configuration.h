@@ -61,7 +61,7 @@ struct ship
     pid_t pid; /*valore del processo da assegnare alla nave*/
     int id_ship;
     struct position pos_ship; /*posizione della nave nella mappa*/
-    int capacity;             /*capacità della nave in tonnellate*/
+    double capacity;          /*capacità della nave in tonnellate*/
     int speed;                /*(chiedere se posso assegnare in un header file)*/
     int location;             /*mi serve per il dump giornaliero, 0= nel mare, 1= in porto*/
 };
@@ -99,7 +99,8 @@ void sh_memory_v_conf(struct var_conf env_var, struct var_conf *ptr_shm_v_conf);
 
 /*-----inizialization of merce shared memory----*/
 void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good);
-
+/*-----insert all caratteristic pf good in stiva-----*/
+void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_conf env_var);
 /*-----inizialization of port shared memory----*/
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port);
 /*-----sorting of the port's distance from the origin of the map and assignement of id_port------*/

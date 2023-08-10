@@ -136,6 +136,19 @@ void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good)
         // printf("merce: id[%i],size[%i], life[%i]\n", ptr_shm_good[i].id, ptr_shm_good[i].size, ptr_shm_good[i].life);
     }
 }
+void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_conf env_var)
+{
+    for (int i = 0; i < env_var.so_days; i++)
+    {
+        for (int j = 0; j < env_var.so_merci; j++)
+        {
+            stiva[i][j].id = ptr_shm_good[j].id;
+            stiva[i][j].life = ptr_shm_good[j].life;
+            stiva[i][j].size = ptr_shm_good[j].size;
+        }
+    }
+}
+
 /*-----inizialization of port shared memory e assegnamento della loro posizione----*/
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
 {
@@ -194,7 +207,6 @@ void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
 {
     int length = ptr_shm_v_conf->so_porti;
     int sorted = 0;
-
     while (!sorted)
     {
         sorted = 1;
@@ -211,6 +223,7 @@ void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
         }
         length--;
     }
+    
 }
 
 /*-----inizialization of ship shared memory----*/

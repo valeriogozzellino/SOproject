@@ -112,14 +112,18 @@ int main()
     /*-----creazione dei processi porto-----*/
     create_port(ptr_shm_port, ptr_shm_v_conf);
     /*----ordinamento dei porti, richiamo port_sorting in configuration------*/
-    port_sorting(ptr_shm_v_conf, ptr_shm_port);
-    printf("sono il master sono uscito dalla port sorting\n");
+    // printf("sono il master sono uscito dalla port sorting\n");
+    // for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    // {
+    //     printf("----> MASTER: I=%i, ID_PORT=%i\n", i, ptr_shm_port[i].id_port);
+    //     ptr_shm_port[i].id_port = i;
+    // }
     /*-----creazione delle navi-----*/
     create_ship(ptr_shm_ship, ptr_shm_v_conf);
     printf("sono il master sono uscito dalla create ship\n");
 
     /*----ALL PROCESS CREATED-----*/
-    printf("numero di processi totali è:");
+    printf("tutti i processi sono stati creati: %i\n", NUM_PROCESSI);
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
@@ -160,7 +164,7 @@ int main()
             }
         }
         printf("MASTER: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
-        printf("MASTER: numero di giorni: %i\n", ptr_shm_v_conf->days_real++);
+        printf("MASTER: numero di giorni: %i\n", ptr_shm_v_conf->days_real);
         /**
          * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
          */
@@ -171,7 +175,7 @@ int main()
         for (int i = 0; i < env_var.so_porti; i++)
         {
             ptr_shm_port[i].pid > 0 ?: active_process--;
-            printf("MASTER: il porto %i ha RICEVUTO[%i lotti] e SPEDITO[%i lotti] \n", ptr_shm_port[i].g_received, ptr_shm_port[i].g_send);
+            printf("MASTER: il porto %i ha RICEVUTO[%i lotti] e SPEDITO[%i lotti] \n", ptr_shm_port[i].id_port, ptr_shm_port[i].g_received, ptr_shm_port[i].g_send);
         }
     }
 

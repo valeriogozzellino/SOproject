@@ -18,7 +18,17 @@
 #include <string.h>
 #include <limits.h>
 /*----PROTOTIPI DI FUNZIONI-----*/
-void create_goods(struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, struct good **domanda_days, struct good **offerta_days, int id_shm_domanda, int id_shm_offerta, int type_offered, int type_asked, int id_porto);
+/**
+ * funzione che mi sceglie in modo randomico i tipi di merce che verranno offerti e quali domandati al porto
+ */
+void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, struct good **domanda_days, struct good **offerta_days, int type_offered, int type_asked);
+/**
+ * funzione che distribuisce in modo equo le tonnellate giornaliere in modo da rispettare SO_FILL, si cerca
+ * di ridurre al minimo gli sprechi soddisfando a pieno le tonnellate disponibili
+ */
 void create_lots(struct good **domanda_days, struct good **offerta_days, int ton_days, int type_offered, int type_asked, int id_porto, int days_real);
-
+/**
+ *funzione per il controllo della scadenza delle merci nl porto
+ */
+void expired_good(struct good **offerta_days, int type_offered, int id_porto, int days_real);
 #endif /*__HEADERPORT_H */
