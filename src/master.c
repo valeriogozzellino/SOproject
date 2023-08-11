@@ -14,7 +14,7 @@
 #include <signal.h>
 #include <string.h>
 #include "configuration.h"
-#define NUM_PROCESSI (env_var.so_navi + env_var.so_porti)
+#define NUM_PROCESSI (env_var.so_navi + env_var.so_porti + 3)
 
 /*--------variabili che devo utilizzare---------*/
 struct var_conf env_var;
@@ -36,8 +36,8 @@ int active_process; // processi attivi durante la simulazione
 /*------------prototipi di funzioni-----------*/
 void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf);
 void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf);
+void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf);
 /*---inizializza i semafori----*/
-// void handle_signal(int signal);
 void signalHandler(int signum);
 /*----------MAIN-----------*/
 int main()
@@ -109,17 +109,13 @@ int main()
     load_val_semaphor(sem_id_banchine, sem_id_shm, sem_id, ptr_shm_semaphore, ptr_shm_v_conf);
 
     printf("HO INIZIALIZZATO I VALORI IN MEMORIA CONDIVISA , es: \n semaforo 1:%i, size merce casuale: %i, so fill porto:%i \n", ptr_shm_semaphore[0], ptr_shm_good[4].size, ptr_shm_port[1].fill);
-    /*-----creazione dei processi porto-----*/
+    /*-----creazione dei  porti-----*/
     create_port(ptr_shm_port, ptr_shm_v_conf);
-    /*----ordinamento dei porti, richiamo port_sorting in configuration------*/
-    // printf("sono il master sono uscito dalla port sorting\n");
-    // for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
-    // {
-    //     printf("----> MASTER: I=%i, ID_PORT=%i\n", i, ptr_shm_port[i].id_port);
-    //     ptr_shm_port[i].id_port = i;
-    // }
     /*-----creazione delle navi-----*/
     create_ship(ptr_shm_ship, ptr_shm_v_conf);
+    /*-----create storm------------*/
+    create_storm(ptr_shm_port, ptr_shm_ship, ptr_shm_v_conf);
+
     printf("sono il master sono uscito dalla create ship\n");
 
     /*----ALL PROCESS CREATED-----*/
@@ -304,6 +300,61 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
     free(id_mem_semop);
 }
 
+void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
+{
+    char *args_storm[] = {PATH_SHIP, NULL, NULL, NULL, NULL, NULL};
+    char *id_mem_conf = malloc(sizeof(char));
+    char *id_mem_port = malloc(sizeof(char));
+    char *id_mem_ship = malloc(sizeof(char));
+    char *id_mem_semop = malloc(sizeof(char));
+    args_storm[1] = id_mem_conf;
+    args_storm[2] = id_mem_port;
+    args_storm[3] = id_mem_ship;
+    args_storm[4] = id_mem_semop;
+
+    sprintf(id_mem_conf, "%d", sh_mem_id_conf);
+    sprintf(id_mem_port, "%d", sh_mem_id_port);
+    sprintf(id_mem_ship, "%d", sh_mem_id_ship);
+    sprintf(id_mem_semop, "%d", sh_mem_id_semaphore);
+    switch (fork())
+    {
+    case -1:
+        TEST_ERROR;
+    case 0:
+        execvp(PATH_STORM, args_storm);
+        perror("Execve error\n");
+        exit(1);
+    default:
+        sleep(1);
+    }
+    switch (fork())
+    {
+    case -1:
+        TEST_ERROR;
+    case 0:
+        execvp(PATH_SWELL, args_storm);
+        perror("Execve error\n");
+        exit(1);
+    default:
+        sleep(1);
+    }
+    switch (fork())
+    {
+    case -1:
+        TEST_ERROR;
+    case 0:
+        execvp(PATH_MAELSTROM, args_storm);
+        perror("Execve error\n");
+        exit(1);
+    default:
+        sleep(1);
+    }
+
+    free(id_mem_conf);
+    free(id_mem_port);
+    free(id_mem_ship);
+    free(id_mem_semop);
+}
 void signalHandler(int signum)
 {
 

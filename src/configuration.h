@@ -10,6 +10,9 @@
 #include <math.h>
 #define PATH_PORT "bin/port"
 #define PATH_SHIP "bin/ship"
+#define PATH_STORM "bin/storm_duration"
+#define PATH_MAELSTROM "bin/maelstorm"
+#define PATH_SWELL "bin/swell_duration"
 #define RD_T0_GO 1         /*processi pronti a partire*/
 #define START_SIMULATION 0 /*semaphore*/
 #define DISTANZA_P_N_ sqrt(pow(ptr_shm_port[*id_porto + 1].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[*id_porto + 1].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))
@@ -36,6 +39,9 @@ struct var_conf
     int so_fill;
     int so_banchine; // nave non aspetta che la banchina sia libera
     int so_capacity;
+    double so_maelstorm;
+    double so_swell_duration;
+    double so_storm_duration;
 };
 
 struct good

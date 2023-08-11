@@ -90,6 +90,18 @@ void find_val(struct var_conf *env_var)
                 env_var->so_capacity = atoi(number);
                 printf("SO_CAPACITY: %i \n", env_var->so_capacity);
                 break;
+            case 14:
+                env_var->so_storm_duration = atof(number);
+                printf("SO_STORM_DURATION: %f \n", env_var->so_storm_duration);
+                break;
+            case 15:
+                env_var->so_swell_duration = atof(number);
+                printf("SO_SWELL_DURATION: %f \n", env_var->so_swell_duration);
+                break;
+            case 16:
+                env_var->so_maelstorm = atof(number);
+                printf("SO_MAELSTORM: %f \n", env_var->so_maelstorm);
+                break;
             }
         }
     }
@@ -223,7 +235,6 @@ void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
         }
         length--;
     }
-    
 }
 
 /*-----inizialization of ship shared memory----*/

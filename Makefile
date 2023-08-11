@@ -20,6 +20,9 @@ bin/ship: build/ship.o build/configuration.o build/headership.o $(COMMON_DEPS)
 bin/port: build/port.o build/configuration.o build/headerport.o $(COMMON_DEPS)
 	$(CC) -o bin/port build/configuration.o build/port.o build/headerport.o -lm
 
+bin/storm: build/storm_duration.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/storm_duration.o build/configuration.o build/strom_duration.o -lm
+
 bin/file-prova: build/file-prova.o build/configuration.o build/headerport.o $(COMMON_DEPS)
 	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o build/headerport.o -lm 
 clean: 

@@ -115,7 +115,6 @@ void main(int argc, char *argv[])
             id_ship = i;
         }
     }
-    printf("ID_SHIP[%d]\n", id_ship);
     /*setto l'handler per la terminazione*/
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
