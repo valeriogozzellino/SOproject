@@ -3,9 +3,11 @@
 progect of operative sistem based on implements a simulation of the sea's tread
 
 cose importanti da vedere:
--mettere segnali di terminazione per i nuovi processi maelstorm ecc..
 
-- gestire i segnali inviati da questi processi
+- gestire il dump, in particolare le merci che sono in nave o in porto
+- GESTIRE IL CASO IN CUI NON CI SIA PIÙ DOMANDA O OFFERTA, PENSO IMPOSSIBILE DATO CHE SI GENERA TUTTI I GIORNI
+- utilizzare SIGTERM per killare le navi e i porti anzichè kill sennò non si può gestire
+
 - correggere e pulire il codice
   -inserire una pipe o una msg per l'invio di messaggi tra i processi.
 

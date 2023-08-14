@@ -30,6 +30,6 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
  * funzione richimaata nel momento in cui una nae arriva in porto e si trova sulla banchina, la nave verifica quali merce sono scadute nel viaggio
  * e lo notifica
  */
-void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, int id_ship, struct good **stiva);
+void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, int id_ship, struct good **stiva);
 
 #endif /*__HEADERSHIP_H */

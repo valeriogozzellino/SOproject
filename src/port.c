@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <time.h>
+/*#include <time.h>*/
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -19,22 +19,18 @@
 #define ACCESS 0600
 /*----VARIABILI GLOBALI----*/
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore;
-struct port *ptr_shm_porto; // ptr to shared memroy info porto
-struct good *ptr_shm_good;  // ptr to shared mem for info good
+struct port *ptr_shm_porto;
+struct good *ptr_shm_good;
 struct var_conf *ptr_shm_v_conf;
 struct sembuf sops;
 struct sigaction sa;
 int *ptr_shm_sem;
 int id_porto;
 int id_shm_domanda, id_shm_offerta;
-int days_real; // giorni reali che passano nella simulazione
+int days_real;
 
-// void handle_signal_termination(int signal);
-// Funzione per liberare la memoria condivisa
 void cleanup()
 {
-
-    // Deallocazione della memoria condivisa
     if (id_shm_offerta != -1)
     {
         if (shmctl(id_shm_offerta, IPC_RMID, NULL) == -1)
@@ -78,7 +74,6 @@ void cleanup()
     exit(0);
 }
 
-// Handler per il segnale di KILL
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
@@ -86,26 +81,26 @@ void handle_kill_signal(int signum)
 }
 
 /*-------FUNZIONE MAIN-------*/
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     /*----make a connection with master's sh memory---*/
+    int i = 0, type_offered, type_asked;
+    double ton_days;
+    size_t size1, size2;
     sh_mem_id_good = atoi(argv[1]);
     sh_mem_id_conf = atoi(argv[2]);
     sh_mem_id_port = atoi(argv[3]);
     sh_mem_id_semaphore = atoi(argv[4]);
-    // printf("SONO NEL PORTO : shm_id_good[%i], sh_mem_id_conf[%i], sh_mem_id_port[%i], sh_mem_id_semaphore[%i]\n", sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore);
     ptr_shm_good = shmat(sh_mem_id_good, NULL, ACCESS);
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, ACCESS);
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, ACCESS);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, ACCESS);
+    struct good *domanda_days[SO_DAYS];
+    struct good *offerta_days[SO_DAYS];
     srand(time(NULL));
-    double ton_days;
     days_real = 0;
-    struct good *domanda_days[ptr_shm_v_conf->so_days]; // per ogni giorno vengono create le merci, array di array in cui il primo rafppresenta il giorno e il secondo le merci
-    struct good *offerta_days[ptr_shm_v_conf->so_days];
     port_sorting(ptr_shm_v_conf, ptr_shm_porto);
-    /*mi riconduco all'id del mio porto per matchare i dati*/
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         if (getpid() == ptr_shm_porto[i].pid)
         {
@@ -113,30 +108,28 @@ void main(int argc, char *argv[])
             printf("PORTO %i: ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
         }
     }
-    int type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
-    int type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
+    type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
+    type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
     ptr_shm_porto[id_porto].n_type_asked = type_asked;
     ptr_shm_porto[id_porto].n_type_offered = type_offered;
     /*
     creo una memoria condivisa per organizzare domanda e offerta-per ogni porto
     */
-    printf("-----1------\n");
-    size_t size1 = sizeof(struct good) * type_offered * ptr_shm_v_conf->so_days;
-    size_t size2 = sizeof(struct good) * type_asked * ptr_shm_v_conf->so_days;
+    size1 = sizeof(struct good) * type_offered * ptr_shm_v_conf->so_days;
+    size2 = sizeof(struct good) * type_asked * ptr_shm_v_conf->so_days;
 
-    id_shm_offerta = shmget(IPC_PRIVATE, size1, ACCESS); // creo un array di offerte per ogni giorno
+    id_shm_offerta = shmget(IPC_PRIVATE, size1, ACCESS);
     id_shm_domanda = shmget(IPC_PRIVATE, size2, ACCESS);
     /**salvo il memoria condivisa  il numero dei tipi offerti utilizzati nello scambio di merce con le navi*/
     ptr_shm_porto[id_porto].id_shm_offerta = id_shm_offerta;
     ptr_shm_porto[id_porto].id_shm_domanda = id_shm_domanda;
-    printf("-----2------\n");
 
     /*memoria condivisa per offerta e domanda generate ogni giorno, visibile alle navi*/
-    for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
         offerta_days[i] = shmat(id_shm_offerta, NULL, 0);
     }
-    for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
         domanda_days[i] = shmat(id_shm_domanda, NULL, 0);
     }
@@ -163,7 +156,7 @@ void main(int argc, char *argv[])
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
-    semop(ptr_shm_sem[2], &sops, 1); // attendo master che mi dia il via quando tutti i px hanno aggiunto 1 al ready to go
+    semop(ptr_shm_sem[2], &sops, 1);
     printf("-----PORTO %i: CONFIGURATO, PRONTO ALLA SIMULAZIONE-----\n", id_porto);
     /*------------*/
     sops.sem_num = START_SIMULATION;
@@ -171,15 +164,14 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------PORTO %i: START SIMULAZIONE------\n", id_porto);
     /*----START SIMULAZIONE-----*/
-    int i = 0;
+
     while (i <= ptr_shm_v_conf->so_days)
     {
         sleep(1);
-        expired_good(offerta_days, type_offered, id_porto, days_real);
+        expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, days_real);
         days_real++;
         create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, days_real); /*creazione giornaliera di lotti*/
         i++;
     }
-    // impostare un handler con una maschera che se ricevo segnale di terminazone allora maschero il segnale elimino tutto e poi termino
-    // sigaction(SIGUSR1, &sa, NULL);
+    return 0;
 }

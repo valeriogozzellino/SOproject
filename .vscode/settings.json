@@ -33,5 +33,12 @@
     "**/.vscode",
     "**/.vscode/**"
   ],
-  "C_Cpp_Runner.useAddressSanitizer": false
+  "C_Cpp_Runner.useAddressSanitizer": false,
+  "files.associations": {
+    "headerport.h": "c",
+    "time.h": "c",
+    "ipc.h": "c",
+    "shm.h": "c",
+    "wait.h": "c"
+  }
 }

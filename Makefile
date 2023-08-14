@@ -1,8 +1,9 @@
 CC = gcc
-all: bin/master bin/port bin/ship
+all: bin/master bin/port bin/ship bin/storm_duration bin/swell_duration bin/maelstorm bin/dump
 prova: bin/file-prova
 
-CFLAGS = -g
+
+CFLAGS = -g #-std=c89 -Wpedantic
 
 INCLUDES = src/*.h
 
@@ -20,8 +21,17 @@ bin/ship: build/ship.o build/configuration.o build/headership.o $(COMMON_DEPS)
 bin/port: build/port.o build/configuration.o build/headerport.o $(COMMON_DEPS)
 	$(CC) -o bin/port build/configuration.o build/port.o build/headerport.o -lm
 
-bin/storm: build/storm_duration.o build/configuration.o $(COMMON_DEPS)
-	$(CC) -o bin/storm_duration.o build/configuration.o build/strom_duration.o -lm
+bin/storm_duration: build/storm_duration.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/storm_duration build/configuration.o build/storm_duration.o -lm
+
+bin/maelstorm: build/maelstorm.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/maelstorm build/configuration.o build/maelstorm.o -lm
+
+bin/swell_duration: build/swell_duration.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/swell_duration build/configuration.o build/swell_duration.o -lm
+
+bin/dump: build/dump.o build/configuration.o $(COMMON_DEPS)
+	$(CC) -o bin/dump build/configuration.o build/dump.o -lm
 
 bin/file-prova: build/file-prova.o build/configuration.o build/headerport.o $(COMMON_DEPS)
 	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o build/headerport.o -lm 

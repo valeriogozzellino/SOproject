@@ -25,7 +25,37 @@ struct port *ptr_shm_port;
 struct ship *ptr_shm_ship;
 struct var_conf *ptr_shm_v_conf;
 struct sembuf sops;
+void handle_kill_signal(int signum);
+void cleanup();
+/**
+ *
+ */
+void cleanup()
+{
+    if (shmdt(ptr_shm_v_conf) == -1)
+    {
+        perror("ptr_shm_conf in STORM");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_port) == -1)
+    {
+        perror("ptr_shm_porto in STORM");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_sem) == -1)
+    {
+        perror("ptr_shm_sem in STORM");
+        exit(1);
+    }
 
+    exit(0);
+}
+
+void handle_kill_signal(int signum)
+{
+    printf("STORM: Ricevuto segnale di KILL .\n");
+    cleanup();
+}
 void main(int argc, char *argv[])
 {
     sh_mem_id_conf = atoi(argv[1]);
@@ -37,6 +67,12 @@ void main(int argc, char *argv[])
     ptr_shm_ship = shmat(sh_mem_id_ship, NULL, 0600);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
     srand(time(NULL));
+    int random_ship, i;
+    if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
+    {
+        printf("ricezione segnale nel STORM\n");
+        exit(1);
+    }
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
@@ -48,13 +84,14 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------STORM : START SIMULATION-------\n");
 
-    for (int i = 0; i < 50; i++)
+    for (i = 0;; i++)
     {
-        int random_ship = (rand() % (ptr_shm_v_conf->so_navi - i));
+        random_ship = rand() % (ptr_shm_v_conf->so_navi);
+        printf("STORM: nave da comlpire : %i\n", random_ship);
         sleep(1);
-        if (kill(ptr_shm_ship[random_ship].pid, SIGINT) != -1)
+        if (kill(ptr_shm_ship[random_ship].pid, SIGUSR1) != -1)
         {
-            printf("segnale di terminazione inviato correttamente alla nave %i\n", ptr_shm_ship[random_ship].id_ship);
+            printf("SEGNALE STORM inviato correttamente alla nave %i\n", ptr_shm_ship[random_ship].id_ship);
         }
     }
 }

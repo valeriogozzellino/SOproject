@@ -14,7 +14,7 @@
 #include <signal.h>
 #include <string.h>
 #include "configuration.h"
-#define NUM_PROCESSI (env_var.so_navi + env_var.so_porti + 3)
+#define NUM_PROCESSI (env_var.so_navi + env_var.so_porti + 4)
 
 /*--------variabili che devo utilizzare---------*/
 struct var_conf env_var;
@@ -28,15 +28,18 @@ struct port *ptr_shm_port;
 struct ship *ptr_shm_ship;
 struct sembuf sops;
 int *ptr_shm_semaphore;
-int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_ship, sh_mem_id_semaphore; // id shared memory
-int sem_id_banchine, sem_id_shm, sem_id;                                                 // semafori
+int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_ship, sh_mem_id_semaphore;
+int sem_id_banchine, sem_id_shm, sem_id;
 int status;
-int active_process; // processi attivi durante la simulazione
+int active_process;
+int days_real, i;
+int *control_process;
 
 /*------------prototipi di funzioni-----------*/
 void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf);
 void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf);
-void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf);
+void create_storm(struct var_conf *ptr_shm_v_conf);
+void create_dump(struct var_conf *ptr_shm_v_conf);
 /*---inizializza i semafori----*/
 void signalHandler(int signum);
 /*----------MAIN-----------*/
@@ -45,7 +48,8 @@ int main()
     /*------ora configuro le variabili-------*/
     signal(SIGINT, signalHandler);
     signal(SIGALRM, signalHandler);
-    int ship_cariche = 0, ship_vuote = 0, ship_porto = 0, days_real = 0;
+    days_real = 0;
+    control_process = malloc(sizeof(int) * 4);
     srand(time(NULL));
 
     /*-----funzioni in file configuration.h----*/
@@ -108,18 +112,17 @@ int main()
     /*------inizializzo le risorse per il semafori------*/
     load_val_semaphor(sem_id_banchine, sem_id_shm, sem_id, ptr_shm_semaphore, ptr_shm_v_conf);
 
-    printf("HO INIZIALIZZATO I VALORI IN MEMORIA CONDIVISA , es: \n semaforo 1:%i, size merce casuale: %i, so fill porto:%i \n", ptr_shm_semaphore[0], ptr_shm_good[4].size, ptr_shm_port[1].fill);
     /*-----creazione dei  porti-----*/
     create_port(ptr_shm_port, ptr_shm_v_conf);
     /*-----creazione delle navi-----*/
     create_ship(ptr_shm_ship, ptr_shm_v_conf);
     /*-----create storm------------*/
-    create_storm(ptr_shm_port, ptr_shm_ship, ptr_shm_v_conf);
-
-    printf("sono il master sono uscito dalla create ship\n");
+    create_storm(ptr_shm_v_conf);
+    /*-----create dump-------------*/
+    create_dump(ptr_shm_v_conf);
 
     /*----ALL PROCESS CREATED-----*/
-    printf("tutti i processi sono stati creati: %i\n", NUM_PROCESSI);
+    printf("MASTER: tutti i processi sono stati creati: %i\n", NUM_PROCESSI);
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
@@ -130,54 +133,37 @@ int main()
     sops.sem_num = START_SIMULATION;
     sops.sem_op = NUM_PROCESSI;
     semop(sem_id, &sops, 1);
-    printf("MASTER: HO RILASCIATO I PROCESSI\n");
+    printf("-----------MASTER: HO RILASCIATO I PROCESSI-------\n");
     /*----START TEMPO DI SIMULAZIONE, LE NAVI GURANO FINO A RICEZIONE DEL SEGNALE -----*/
-    alarm(env_var.so_days); //
-    printf("MASTER: HO ATTIVATO L'ALARM\n");
+    alarm(env_var.so_days);
+    printf("---------MASTER: HO ATTIVATO L'ALARM----------\n");
     active_process = NUM_PROCESSI;
-    while (active_process > 0) // quando terminano tutti i processi (wait(&status) != -1)
+    while (active_process > 0)
     {
         sleep(1); /*attende un giorno = 1sec*/
         printf("----------MASTER: È PASSATO UN GIORNO---------\n");
         ptr_shm_v_conf->days_real++;
-        ship_cariche = ship_vuote = ship_porto = 0;
-        for (int i = 0; i < env_var.so_navi; i++)
-        {
-            if (ptr_shm_ship[i].location == 0)
-            { // navi nel mare
-                if (ptr_shm_ship[i].capacity < ptr_shm_v_conf->so_capacity)
-                {
-                    ship_cariche++;
-                }
-                else
-                {
-                    ship_vuote++;
-                }
-            }
-            else
-            {
-                ship_porto++;
-            }
-        }
-        printf("MASTER: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n", ship_cariche, ship_vuote, ship_porto);
-        printf("MASTER: numero di giorni: %i\n", ptr_shm_v_conf->days_real);
         /**
          * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
          */
-        for (int i = 0; i < env_var.so_navi; i++)
+        for (i = 0; i < env_var.so_navi; i++)
         {
-            ptr_shm_ship[i].pid > 0 ?: active_process--;
+            if (ptr_shm_ship[i].pid <= 0)
+            {
+                active_process--;
+            }
         }
-        for (int i = 0; i < env_var.so_porti; i++)
+        for (i = 0; i < env_var.so_porti; i++)
         {
-            ptr_shm_port[i].pid > 0 ?: active_process--;
-            printf("MASTER: il porto %i ha RICEVUTO[%i lotti] e SPEDITO[%i lotti] \n", ptr_shm_port[i].id_port, ptr_shm_port[i].g_received, ptr_shm_port[i].g_send);
+            if (ptr_shm_port[i].pid <= 0)
+            {
+                active_process--;
+            }
         }
     }
 
-    printf("sto per cancellare la mem condivisa\n");
     /*--------TERMINAZIONE DELLA SIMULAZIONE-----------------*/
-    signalHandler(2); // eliminazione e kill dei processi
+    printf("MASTER: sto per cancellare la mem condivisa\n");
 
     /*------elimino la memoria condivisa-----*/
     if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
@@ -203,20 +189,18 @@ int main()
     semctl(sem_id_banchine, 0, IPC_RMID);
     semctl(sem_id_shm, 0, IPC_RMID);
     semctl(sem_id, 0, IPC_RMID);
-    // free(env_var);
     printf("ho cancellato tutto \n");
     return 0;
 }
 
 void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
 {
-
+    int i;
+    char *args_porto[] = {PATH_PORT, NULL, NULL, NULL, NULL, NULL};
     char *id_mem_good = malloc(sizeof(char));
     char *id_mem_conf = malloc(sizeof(char));
     char *id_mem_port = malloc(sizeof(char));
     char *id_mem_semop = malloc(sizeof(char));
-
-    char *args_porto[] = {PATH_PORT, NULL, NULL, NULL, NULL, NULL};
     args_porto[1] = id_mem_good;
     args_porto[2] = id_mem_conf;
     args_porto[3] = id_mem_port;
@@ -226,7 +210,7 @@ void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
     sprintf(id_mem_port, "%d", sh_mem_id_port);
     sprintf(id_mem_semop, "%d", sh_mem_id_semaphore);
     /*eseguo la fork*/
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         /*---creation of the process port---- */
         switch (fork())
@@ -253,35 +237,30 @@ void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
 void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
 {
 
-    /*-----argv da passare al porto-----*/
+    int j;
     char *args_ship[] = {PATH_SHIP, NULL, NULL, NULL, NULL, NULL, NULL};
-    /*----assegno a questi valori l'id delle rispetive mem condivise----*/
     char *id_mem_good = malloc(sizeof(char));
     char *id_mem_conf = malloc(sizeof(char));
     char *id_mem_port = malloc(sizeof(char));
     char *id_mem_ship = malloc(sizeof(char));
     char *id_mem_semop = malloc(sizeof(char));
-    /*----punto al puntatore----*/
-    args_ship[1] = id_mem_good; // l'argomento di argv è il puntatore alla stringa che indica la memroia condivisa
+    args_ship[1] = id_mem_good;
     args_ship[2] = id_mem_conf;
     args_ship[3] = id_mem_port;
     args_ship[4] = id_mem_ship;
     args_ship[5] = id_mem_semop;
-    /*----converto da intero a stringa-----*/
     sprintf(id_mem_good, "%d", sh_mem_id_good);
     sprintf(id_mem_conf, "%d", sh_mem_id_conf);
     sprintf(id_mem_port, "%d", sh_mem_id_port);
     sprintf(id_mem_ship, "%d", sh_mem_id_ship);
     sprintf(id_mem_semop, "%d", sh_mem_id_semaphore);
-    /*----creo le navi----*/
-    for (int j = 0; j < ptr_shm_v_conf->so_navi; j++)
+    for (j = 0; j < ptr_shm_v_conf->so_navi; j++)
     {
         switch (fork())
         {
         case -1:
             TEST_ERROR;
         case 0:
-            /*-----inserisco il pid della nave per potermi riferire a quella-----*/
             ptr_shm_ship[j].pid = getpid();
 
             printf("----EXECVP DELLA %i^NAVE  CON PID:%i-----\n", j, getpid());
@@ -299,8 +278,45 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
     free(id_mem_ship);
     free(id_mem_semop);
 }
+void create_dump(struct var_conf *ptr_shm_v_conf)
+{
 
-void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
+    char *args_dump[] = {PATH_SHIP, NULL, NULL, NULL, NULL, NULL, NULL};
+    char *id_mem_good = malloc(sizeof(char));
+    char *id_mem_conf = malloc(sizeof(char));
+    char *id_mem_port = malloc(sizeof(char));
+    char *id_mem_ship = malloc(sizeof(char));
+    char *id_mem_semop = malloc(sizeof(char));
+    args_dump[1] = id_mem_good;
+    args_dump[2] = id_mem_conf;
+    args_dump[3] = id_mem_port;
+    args_dump[4] = id_mem_ship;
+    args_dump[5] = id_mem_semop;
+    sprintf(id_mem_good, "%d", sh_mem_id_good);
+    sprintf(id_mem_conf, "%d", sh_mem_id_conf);
+    sprintf(id_mem_port, "%d", sh_mem_id_port);
+    sprintf(id_mem_ship, "%d", sh_mem_id_ship);
+    sprintf(id_mem_semop, "%d", sh_mem_id_semaphore);
+
+    switch (fork())
+    {
+    case -1:
+        TEST_ERROR;
+    case 0:
+        control_process[3] = getpid();
+        execvp(PATH_DUMP, args_dump);
+        perror("Execve error\n");
+        exit(1);
+    default:
+        sleep(1);
+    }
+    free(id_mem_good);
+    free(id_mem_conf);
+    free(id_mem_port);
+    free(id_mem_ship);
+}
+
+void create_storm(struct var_conf *ptr_shm_v_conf)
 {
     char *args_storm[] = {PATH_SHIP, NULL, NULL, NULL, NULL, NULL};
     char *id_mem_conf = malloc(sizeof(char));
@@ -311,7 +327,7 @@ void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct v
     args_storm[2] = id_mem_port;
     args_storm[3] = id_mem_ship;
     args_storm[4] = id_mem_semop;
-
+    printf("MASTER: maelstorm %f, strom %f, swell %f\n ", ptr_shm_v_conf->so_maelstorm, ptr_shm_v_conf->so_storm_duration, ptr_shm_v_conf->so_swell_duration);
     sprintf(id_mem_conf, "%d", sh_mem_id_conf);
     sprintf(id_mem_port, "%d", sh_mem_id_port);
     sprintf(id_mem_ship, "%d", sh_mem_id_ship);
@@ -321,6 +337,7 @@ void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct v
     case -1:
         TEST_ERROR;
     case 0:
+        control_process[0] = getpid();
         execvp(PATH_STORM, args_storm);
         perror("Execve error\n");
         exit(1);
@@ -332,6 +349,7 @@ void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct v
     case -1:
         TEST_ERROR;
     case 0:
+        control_process[1] = getpid();
         execvp(PATH_SWELL, args_storm);
         perror("Execve error\n");
         exit(1);
@@ -343,6 +361,7 @@ void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct v
     case -1:
         TEST_ERROR;
     case 0:
+        control_process[2] = getpid();
         execvp(PATH_MAELSTROM, args_storm);
         perror("Execve error\n");
         exit(1);
@@ -357,7 +376,7 @@ void create_storm(struct port *ptr_shm_port, struct ship *ptr_shm_ship, struct v
 }
 void signalHandler(int signum)
 {
-
+    int i;
     printf("------Ricevuto segnale al MASTER. Eseguo la pulizia-------\n");
 
     switch (signum)
@@ -365,7 +384,7 @@ void signalHandler(int signum)
     case SIGINT:
     case SIGALRM:
 
-        for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+        for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
         {
             if (shmctl(ptr_shm_port[i].id_shm_domanda, IPC_RMID, NULL) == -1)
             {
@@ -380,13 +399,22 @@ void signalHandler(int signum)
                 printf("ERROR IN KILL\n");
             }
         }
-        printf("eliminato i porti\n");
-        for (int i = 0; i < ptr_shm_v_conf->so_navi; i++)
+        printf("MASTER: eliminato i porti\n");
+        for (i = 0; i < ptr_shm_v_conf->so_navi; i++)
         {
 
             if (kill(ptr_shm_ship[i].pid, SIGINT) != -1)
             {
-                printf("segnale di terminazione inviato correttamente alla nave\n");
+                printf("MASTER: segnale di terminazione inviato correttamente alla nave\n");
+            }
+        }
+        printf("MASTER: elimino i processi di controllo\n");
+        for (i = 0; i < 4; i++)
+        {
+
+            if (kill(control_process[i], SIGINT) != -1)
+            {
+                printf("MASTER: segnale di terminazione inviato correttamente ai processi di controllo\n");
             }
         }
         if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
@@ -423,6 +451,6 @@ void signalHandler(int signum)
         }
         break;
     }
-    printf("eliminato tutto\n");
+    printf("MASTER: eliminato tutto\n");
     exit(EXIT_SUCCESS);
 }

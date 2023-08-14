@@ -30,5 +30,5 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
 /**
  *funzione per il controllo della scadenza delle merci nl porto
  */
-void expired_good(struct good **offerta_days, int type_offered, int id_porto, int days_real);
+void expired_good(struct good **offerta_days, struct good *ptr_shm_good, struct var_conf *ptr_shm_v_conf, int type_offered, int id_porto, int days_real);
 #endif /*__HEADERPORT_H */

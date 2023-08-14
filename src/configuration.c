@@ -1,6 +1,3 @@
-/*in questo file andò ad inizializzare tutte le variabili e le strutture utili nel progetto ad esempio:
-le variabili contenute nella shared memory(merce e variabili di configurazione, variaili che utilizzo per
- passare angometnti nella exec e vanno convertiti in char)*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,6 +132,9 @@ void sh_memory_v_conf(struct var_conf env_var, struct var_conf *ptr_shm_v_conf)
     ptr_shm_v_conf->so_banchine = env_var.so_banchine;
     ptr_shm_v_conf->so_loadspeed = env_var.so_loadspeed;
     ptr_shm_v_conf->so_capacity = env_var.so_capacity;
+    ptr_shm_v_conf->so_maelstorm = env_var.so_maelstorm;
+    ptr_shm_v_conf->so_storm_duration = env_var.so_storm_duration;
+    ptr_shm_v_conf->so_swell_duration = env_var.so_swell_duration;
 }
 /*-----inizialization of good in sharem memory---*/
 void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good)
@@ -142,17 +142,17 @@ void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good)
     int i;
     for (i = 0; i < env_var.so_merci; i++)
     {
-        ptr_shm_good[i].id = i;                                                                              // id del lotto
-        ptr_shm_good[i].size = (rand() % env_var.so_size) + 1;                                               // peso del lotto
-        ptr_shm_good[i].life = (rand() % (env_var.so_max_vita - env_var.so_min_vita)) + env_var.so_min_vita; // vita del lotto
-        // printf("merce: id[%i],size[%i], life[%i]\n", ptr_shm_good[i].id, ptr_shm_good[i].size, ptr_shm_good[i].life);
+        ptr_shm_good[i].id = i;
+        ptr_shm_good[i].size = (rand() % env_var.so_size) + 1;
+        ptr_shm_good[i].life = (rand() % (env_var.so_max_vita - env_var.so_min_vita)) + env_var.so_min_vita;
     }
 }
 void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_conf env_var)
 {
-    for (int i = 0; i < env_var.so_days; i++)
+    int i, j;
+    for (i = 0; i < env_var.so_days; i++)
     {
-        for (int j = 0; j < env_var.so_merci; j++)
+        for (j = 0; j < env_var.so_merci; j++)
         {
             stiva[i][j].id = ptr_shm_good[j].id;
             stiva[i][j].life = ptr_shm_good[j].life;
@@ -165,14 +165,13 @@ void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_co
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
 {
     int n_banchine = (rand() % env_var.so_banchine) + 1;
-    for (int j = 0; j < env_var.so_porti; j++)
+    int i, j;
+    for (j = 0; j < env_var.so_porti; j++)
     {
         ptr_shm_port[j].n_banchine = n_banchine;
         ptr_shm_port[j].fill = env_var.so_fill;
     }
-    // printf("Ogni porto ha : banchine [%i], fill [%i]", ptr_shm_port[0].n_banchine, ptr_shm_port[0].fill);
-    //  rappresentazione asse cartesiano
-    for (int i = 0; i < env_var.so_porti; i++)
+    for (i = 0; i < env_var.so_porti; i++)
     {
         switch (i)
         {
@@ -199,14 +198,11 @@ void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port)
     }
 }
 
-/*mi posiziona i porti in maniera ordinata per la distanza dal punto 0 nella  mappa in modo da stabilire un percorso per la nave se
-semplicemente ciclando sull'array*/
 double distance_from_origin(struct port *porto)
 {
     return sqrt(pow(porto->pos_porto.x, 2) + pow(porto->pos_porto.y, 2));
 }
 
-// Metodo per lo scambio di due porti all'interno dell'array
 void swap_ports(struct port *a, struct port *b)
 {
     struct port tmp = *a;
@@ -214,15 +210,15 @@ void swap_ports(struct port *a, struct port *b)
     *b = tmp;
 }
 
-// Metodo per l'ordinamento dell'array `ptr_shm_port` in base alla distanza dal punto (0,0)
 void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
 {
     int length = ptr_shm_v_conf->so_porti;
     int sorted = 0;
+    int j;
     while (!sorted)
     {
         sorted = 1;
-        for (int j = 0; j < length - 1; j++)
+        for (j = 0; j < length - 1; j++)
         {
             double dist1 = distance_from_origin(&ptr_shm_port[j]);
             double dist2 = distance_from_origin(&ptr_shm_port[j + 1]);
@@ -240,7 +236,8 @@ void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port)
 /*-----inizialization of ship shared memory----*/
 void sh_memory_v_ship(struct var_conf env_var, struct ship *ptr_shm_ship)
 {
-    for (int i = 0; i < env_var.so_navi; i++)
+    int i;
+    for (i = 0; i < env_var.so_navi; i++)
     {
         /*----capacità----*/
         ptr_shm_ship[i].capacity = env_var.so_capacity;
@@ -249,21 +246,21 @@ void sh_memory_v_ship(struct var_conf env_var, struct ship *ptr_shm_ship)
         /*---posizione----*/
         ptr_shm_ship[i].pos_ship.x = ((double)rand() / RAND_MAX * env_var.so_lato);
         ptr_shm_ship[i].pos_ship.y = ((double)rand() / RAND_MAX * env_var.so_lato);
-        // printf("posizione_Ship[%i]^:(%f,%f), speed[%i],capacità[%i]\n", i, ptr_shm_ship[i].pos_ship.x, ptr_shm_ship[i].pos_ship.y, ptr_shm_ship[i].speed, ptr_shm_ship[i].capacity);
     }
 }
 void load_val_semaphor(int sem_id_banchine, int sem_id_shm, int sem_id, int *ptr_shm_semaphore, struct var_conf *ptr_shm_v_conf)
 {
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    int i;
+    for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
-        semctl(sem_id_banchine, i, SETVAL, ptr_shm_v_conf->so_banchine); // per accedere al porto, numero di banchine
+        semctl(sem_id_banchine, i, SETVAL, ptr_shm_v_conf->so_banchine);
     }
-    for (int i = 0; i < ptr_shm_v_conf->so_porti; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
-        semctl(sem_id_shm, i, SETVAL, 1); // per accedere alle merci in ogni porto, uno per volta
+        semctl(sem_id_shm, i, SETVAL, 1);
     }
-    semctl(sem_id, 0, SETVAL, 0); // start simulation
-    ptr_shm_semaphore[0] = sem_id_banchine;
-    ptr_shm_semaphore[1] = sem_id_shm;
-    ptr_shm_semaphore[2] = sem_id;
+    semctl(sem_id, 0, SETVAL, 0);
+    ptr_shm_semaphore[0] = sem_id_banchine; /*semaforo di accesso alla banchina di ogni singolo porto*/
+    ptr_shm_semaphore[1] = sem_id_shm;      /*semaforo di accesso alla memoria condivisa dei porti*/
+    ptr_shm_semaphore[2] = sem_id;          /*semaforo per la partenza della simulazione*/
 }

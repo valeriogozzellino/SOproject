@@ -19,7 +19,7 @@
 #define ACCESS 0600
 /*----VARIABILI GLOBALI----*/
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore;
-struct port *ptr_shm_porto; // ptr to shared memroy info porto
+struct port *ptr_shm_porto; 
 struct good *ptr_shm_good;  // ptr to shared mem for info good
 struct good **domanda_days; // per ogni giorno vengono create le merci, array di array in cui il primo rafppresenta il giorno e il secondo le merci
 struct good **offerta_days;
