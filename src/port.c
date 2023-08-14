@@ -28,6 +28,7 @@ int *ptr_shm_sem;
 int id_porto;
 int id_shm_domanda, id_shm_offerta;
 int days_real;
+key_t portMessageQueueKey;
 
 void cleanup()
 {
@@ -106,6 +107,15 @@ int main(int argc, char *argv[])
         {
             id_porto = i;
             printf("PORTO %i: ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
+            portMessageQueueKey = ftok(".", ptr_shm_porto[i].id_port);
+            if (portMessageQueueKey == -1)
+            {
+                perror("ftok for message queue key");
+                exit(1);
+            }
+
+            // Store the message queue key in the struct port
+            ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
         }
     }
     type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/

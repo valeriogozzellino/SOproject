@@ -72,6 +72,7 @@ void handle_kill_signal(int signum)
         nano_load.tv_sec = (int)tmp_storm;                             /*take seconds*/
         nano_load.tv_nsec = (tmp_storm - (int)tmp_storm) * 1000000000; /*take nanoseconds*/
         nanosleep(&nano_load, NULL);
+        ptr_shm_ship[id_ship].sink_type.storm++;
         printf("STORM: Ricevuto seganle di STORM alla nave \n");
         break;
     case SIGUSR2:
@@ -79,11 +80,13 @@ void handle_kill_signal(int signum)
         nano_load.tv_sec = (int)tmp_swell;                             /*take seconds*/
         nano_load.tv_nsec = (tmp_swell - (int)tmp_swell) * 1000000000; /*take nanoseconds*/
         nanosleep(&nano_load, NULL);
+        ptr_shm_ship[id_ship].sink_type.swell++;
         printf("SWELL: Ricevuto seganle di SWELL alla nave \n");
         break;
     case SIGINT:
         printf("MAELSTORM: Ricevuto segnale di KILL (%d).\n", signum);
-        ptr_shm_ship[id_ship].affondata = 1;
+        ptr_shm_ship[id_ship].sink_check = 1;
+        ptr_shm_ship[id_ship].sink_type.maelstorm++;
         ptr_shm_ship[id_ship].location = 0;
         cleanup();
         break;
@@ -165,7 +168,7 @@ int main(int argc, char *argv[])
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------SHIP %i: START SIMULATION-------\n", id_ship);
-    ptr_shm_ship[id_ship].affondata = 0;
+    ptr_shm_ship[id_ship].sink_check = 0;
     /*eseguita la prima volta per RAGGIUNGERE IL PRIMO PORTO DALLA POSIZIONE CASUALE, SUCCESSIVAMENTE SI SPOSTERÀ DI PORTO IN PORTO*/
     ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     printf("------>SHIP %i: si trova al porto : %i \n", id_ship, *id_porto);
@@ -179,6 +182,13 @@ int main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         {
             ptr_shm_port[*id_porto].banchine_occupate++;
+            int portMessageQueue = msgget(ptr_shm_port[*id_porto].message_queue_key, 0600 | IPC_CREAT);
+            if (portMessageQueue == -1)
+            {
+                perror("Failed to create/open message queue for port");
+                exit(1);
+            }
+            sendAttackMessage(portMessageQueue, "Attack on the quay!");
             ship_expired_good(ptr_shm_ship, ptr_shm_v_conf, ptr_shm_good, id_ship, stiva);
             printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 0;

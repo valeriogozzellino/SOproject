@@ -71,7 +71,6 @@ void main(int argc, char *argv[])
     struct timespec nano_load;
     int random_ship, i;
     double tmp_sleep = ptr_shm_v_conf->so_maelstorm;
-    printf("MAELSTORM: kill della nave tra: %f.........%f mem condivisa\n", tmp_sleep, ptr_shm_v_conf->so_maelstorm);
     /**
      *
      */

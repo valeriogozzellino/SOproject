@@ -17,6 +17,14 @@
 #include <limits.h>
 #include "math.h"
 #include "configuration.h"
+#define MAX_MESSAGE_SIZE 100
+
+/* Structure for the message data */
+struct Message
+{
+    long messageType;
+    char messageText[MAX_MESSAGE_SIZE];
+};
 /**
  * funzione di posizionaento nel primo porto della mappa, dopo la creazione della nave , quest'ultima vine posizionata nella mappa in modo
  * randomico, grazie a questa funzione la nave raggiungerà il porto più vicino
@@ -32,4 +40,8 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
  */
 void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, int id_ship, struct good **stiva);
 
+/**
+ * funzione che avverte un porto di essere attaccato alla sua banchina
+ */
+void sendAttackMessage(int portMessageQueue, const char *message);
 #endif /*__HEADERSHIP_H */

@@ -72,6 +72,12 @@ struct position
     double y;
 };
 
+struct sink
+{
+    int maelstorm;
+    int storm;
+    int swell;
+};
 /*-----definition of the ship's structure----- */
 struct ship
 {
@@ -81,7 +87,8 @@ struct ship
     double capacity;          /*capacità della nave in tonnellate*/
     int speed;                /*velocitàò della nave */
     int location;             /*posizione della naveper il dump, se in porto 1 o in mare 0 */
-    int affondata;            /*0 affondata e 1 no*/
+    int sink_check;
+    struct sink sink_type; /*0 affondata e 1 no*/
 };
 
 /*----definition of port's structure-----*/
@@ -100,6 +107,7 @@ struct port
     int g_send;                /*merce inviata */
     int pid_ship;              /*pid della nave che sta facendo scambi se !=0 utile per swellduration*/
     int banchine_occupate;     /* banchine occupate al momento del dump giornaliero*/
+    int message_queue_key;
 };
 
 struct mymsg

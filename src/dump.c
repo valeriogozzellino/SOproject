@@ -83,7 +83,7 @@ void main(int argc, char *argv[])
     /*-----dichiarazioni di variabili-----*/
     struct good *domanda_porto[ptr_shm_v_conf->so_days];
     struct good *offerta_porto[ptr_shm_v_conf->so_days];
-    int ship_cariche = 0, ship_vuote = 0, ship_porto = 0, ship_affondate = 0;
+    int ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell;
     struct good *status = malloc(sizeof(struct good) * ptr_shm_v_conf->so_days);
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
@@ -115,10 +115,10 @@ void main(int argc, char *argv[])
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
         sleep(1);
-        ship_cariche = 0, ship_vuote = 0, ship_porto = 0, ship_affondate = 0;
+        ship_cariche = 0, ship_vuote = 0, ship_porto = 0, ship_maelstorm = 0, ship_storm = 0, ship_swell = 0;
         for (i = 0; i < ptr_shm_v_conf->so_navi; i++)
         {
-            if (ptr_shm_ship[i].affondata != 1)
+            if (ptr_shm_ship[i].sink_check != 1)
             {
 
                 if (ptr_shm_ship[i].location == 1)
@@ -139,10 +139,21 @@ void main(int argc, char *argv[])
             }
             else
             {
-                ship_affondate++;
+                if (ptr_shm_ship[i].sink_type.maelstorm > 0)
+                {
+                    ship_maelstorm++;
+                }
+                if (ptr_shm_ship[i].sink_type.storm > 0)
+                {
+                    ship_storm++;
+                }
+                if (ptr_shm_ship[i].sink_type.swell > 0)
+                {
+                    ship_swell++;
+                }
             }
         }
-        printf("DUMP: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n [%d] navi affondate\n", ship_cariche, ship_vuote, ship_porto, ship_affondate);
+        printf("DUMP: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n [%d] navi colpite da maelstorm\n,[%d] navi colpite da storm\n,[%d] navi colpite da swell\n", ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell);
         printf("DUMP: numero di giorni: %i\n", ptr_shm_v_conf->days_real);
         /**
          *  verifico quante merci sono scadute in mare o in porto

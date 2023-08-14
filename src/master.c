@@ -50,6 +50,7 @@ int main()
     signal(SIGALRM, signalHandler);
     days_real = 0;
     control_process = malloc(sizeof(int) * 4);
+    int active_ship;
     srand(time(NULL));
 
     /*-----funzioni in file configuration.h----*/
@@ -146,12 +147,22 @@ int main()
         /**
          * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
          */
+        active_ship = 0;
         for (i = 0; i < env_var.so_navi; i++)
         {
+
             if (ptr_shm_ship[i].pid <= 0)
             {
                 active_process--;
             }
+            else
+            {
+                active_ship++;
+            }
+        }
+        if (active_ship <= 0)
+        {
+            signalHandler(2);
         }
         for (i = 0; i < env_var.so_porti; i++)
         {
@@ -327,7 +338,6 @@ void create_storm(struct var_conf *ptr_shm_v_conf)
     args_storm[2] = id_mem_port;
     args_storm[3] = id_mem_ship;
     args_storm[4] = id_mem_semop;
-    printf("MASTER: maelstorm %f, strom %f, swell %f\n ", ptr_shm_v_conf->so_maelstorm, ptr_shm_v_conf->so_storm_duration, ptr_shm_v_conf->so_swell_duration);
     sprintf(id_mem_conf, "%d", sh_mem_id_conf);
     sprintf(id_mem_port, "%d", sh_mem_id_port);
     sprintf(id_mem_ship, "%d", sh_mem_id_ship);
