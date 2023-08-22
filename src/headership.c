@@ -1,5 +1,5 @@
 /*assegnare alle diverse struct i valori che devo configurare in configuration.c*/
-/*#include <time.h>*/
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -21,7 +21,7 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
 {
     /*----utilities parameter----*/
     double tmp_shift, frac, intpart;
-    struct timespec nanotime;
+    struct timespec ship_movement;
     double *array_distance = malloc(sizeof(double) * ptr_shm_v_conf->so_porti);
     int *array_indici = malloc(sizeof(int) * ptr_shm_v_conf->so_porti);
     int indice_first_port = 0;
@@ -41,15 +41,15 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
         }
     }
     *id_porto = array_indici[indice_first_port];
-    tmp_shift = ((array_distance[indice_first_port]) / ((double)ptr_shm_v_conf->so_speed));
-    nanotime.tv_sec = (int)tmp_shift;                             /*take seconds*/
-    nanotime.tv_nsec = (tmp_shift - (int)tmp_shift) * 1000000000; /*take nanoseconds*/
-    nanosleep(&nanotime, NULL);
+    tmp_shift = array_distance[indice_first_port] / (double)ptr_shm_v_conf->so_speed;
+    ship_movement.tv_sec = (time_t)tmp_shift;
+    ship_movement.tv_nsec = (tmp_shift - ship_movement.tv_sec) * 1e9; /*take nanoseconds*/
+    nanosleep(&ship_movement, NULL);
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
 
-    printf("------> SHIP %i nel porto con id: %i \n", id_ship, *id_porto);
+    //printf("------> SHIP %i nel porto con id: %i \n", id_ship, *id_porto);
     free(array_distance);
 }
 /*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
@@ -77,7 +77,6 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
     /*----ora devo modificare la x e la y della nave----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[*id_porto].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[*id_porto].pos_porto.y;
-    printf("nave: posizione della nave[%i] aggiornata:(%f,%f), si trova al porto[%i]\n", id_ship, ptr_shm_ship[id_ship].pos_ship.x, ptr_shm_ship[id_ship].pos_ship.y, *id_porto);
 }
 void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, int id_ship, struct good **stiva)
 {

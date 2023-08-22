@@ -112,18 +112,17 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------DUMP : START SIMULATION-------\n");
     /*---chiamare una funzione dump oer gestire il dump a terminazione ------*/
-    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
+    for (i = 0; i < SO_DAYS; i++)
     {
         sleep(1);
         ship_cariche = 0, ship_vuote = 0, ship_porto = 0, ship_maelstorm = 0, ship_storm = 0, ship_swell = 0;
-        for (i = 0; i < ptr_shm_v_conf->so_navi; i++)
+        for (j = 0; j < ptr_shm_v_conf->so_navi; j++)
         {
-            if (ptr_shm_ship[i].sink_check != 1)
+            if (ptr_shm_ship[j].sink_check != 1)
             {
-
-                if (ptr_shm_ship[i].location == 1)
+                if (ptr_shm_ship[j].location == 1)
                 { /*navi nel mare*/
-                    if (ptr_shm_ship[i].capacity < ptr_shm_v_conf->so_capacity)
+                    if (ptr_shm_ship[j].capacity < ptr_shm_v_conf->so_capacity)
                     {
                         ship_cariche++;
                     }
@@ -139,41 +138,28 @@ void main(int argc, char *argv[])
             }
             else
             {
-                if (ptr_shm_ship[i].sink_type.maelstorm > 0)
+                if (ptr_shm_ship[j].sink_type.maelstorm > 0)
                 {
                     ship_maelstorm++;
                 }
-                if (ptr_shm_ship[i].sink_type.storm > 0)
+                if (ptr_shm_ship[j].sink_type.storm > 0)
                 {
                     ship_storm++;
                 }
-                if (ptr_shm_ship[i].sink_type.swell > 0)
+                if (ptr_shm_ship[j].sink_type.swell > 0)
                 {
                     ship_swell++;
                 }
             }
         }
-        printf("DUMP: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote,\n [%d] navi in porto\n [%d] navi colpite da maelstorm\n,[%d] navi colpite da storm\n,[%d] navi colpite da swell\n", ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell);
+        printf("DUMP: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote\n [%d] navi in porto\n [%d] navi colpite da maelstorm\n [%d] navi colpite da storm\n [%d] navi colpite da swell\n", ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell);
         printf("DUMP: numero di giorni: %i\n", ptr_shm_v_conf->days_real);
         /**
          *  verifico quante merci sono scadute in mare o in porto
          */
-        for (i = 0; i < ptr_shm_v_conf->so_merci; i++)
+        for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
         {
-            printf("DUMP: merce id[%i] , lotti scaduti in mare:[%i], lotti scaduti in porto:[%i] \n", ptr_shm_good[i].id, ptr_shm_good[i].recap.port_expired, ptr_shm_good[i].recap.ship_expired);
+            printf("DUMP: merce id[%i] ,merce life[%i],  lotti scaduti in porto:[%i], lotti scaduti in mare:[%i] \n", ptr_shm_good[j].id, ptr_shm_good[j].life, ptr_shm_good[j].recap.port_expired, ptr_shm_good[j].recap.ship_expired);
         }
-        /*
-         * verifico quanta merce è presente in un porto
-         */
-        // for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
-        // {
-        //     for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
-        //     {
-        //         for (z = 0; z < ptr_shm_port[i].n_type_offered; z++)
-        //         {
-        //         }
-        //     }
-        //     printf("DUMP: il porto %i ha RICEVUTO[%i lotti] e SPEDITO[%i lotti] e ha [%i]Banchine occupate \n", ptr_shm_port[i].id_port, ptr_shm_port[i].g_received, ptr_shm_port[i].g_send, ptr_shm_port[i].banchine_occupate);
-        // }
     }
 }

@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
-/*#include <time.h>*/
+#include <time.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -24,10 +24,13 @@ struct good *ptr_shm_good;
 struct var_conf *ptr_shm_v_conf;
 struct sembuf sops;
 struct sigaction sa;
+struct good *offerta_days[SO_DAYS];
+struct good *domanda_days[SO_DAYS];
 int *ptr_shm_sem;
 int id_porto;
 int id_shm_domanda, id_shm_offerta;
 int days_real;
+int type_offered, type_asked, ton_days;
 key_t portMessageQueueKey;
 
 void cleanup()
@@ -78,6 +81,7 @@ void cleanup()
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
+    check_good(domanda_days, offerta_days, ptr_shm_v_conf, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
 
@@ -85,7 +89,7 @@ void handle_kill_signal(int signum)
 int main(int argc, char *argv[])
 {
     /*----make a connection with master's sh memory---*/
-    int i = 0, type_offered, type_asked;
+    int i, j;
     double ton_days;
     size_t size1, size2;
     sh_mem_id_good = atoi(argv[1]);
@@ -96,8 +100,6 @@ int main(int argc, char *argv[])
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, ACCESS);
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, ACCESS);
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, ACCESS);
-    struct good *domanda_days[SO_DAYS];
-    struct good *offerta_days[SO_DAYS];
     srand(time(NULL));
     days_real = 0;
     port_sorting(ptr_shm_v_conf, ptr_shm_porto);
@@ -133,7 +135,6 @@ int main(int argc, char *argv[])
     /**salvo il memoria condivisa  il numero dei tipi offerti utilizzati nello scambio di merce con le navi*/
     ptr_shm_porto[id_porto].id_shm_offerta = id_shm_offerta;
     ptr_shm_porto[id_porto].id_shm_domanda = id_shm_domanda;
-
     /*memoria condivisa per offerta e domanda generate ogni giorno, visibile alle navi*/
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
@@ -147,7 +148,6 @@ int main(int argc, char *argv[])
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
     {
         printf("ricezione segnale nel porto\n");
-        perror("signal\n");
         exit(1);
     }
     /*-----
@@ -156,7 +156,18 @@ int main(int argc, char *argv[])
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
     printf("PORTO %i: tonnellate al giorno----> [%f]\n", id_porto, ton_days);
     create_goods(ptr_shm_v_conf, ptr_shm_good, domanda_days, offerta_days, type_offered, type_asked);
-    create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, days_real);
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
+    {
+        create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, i);
+    }
+    for (j = 0; j < type_offered; j++)
+    {
+        printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
+    }
+    for (j = 0; j < type_asked; j++)
+    {
+        printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
+    }
     /*
     creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
     */
@@ -174,13 +185,11 @@ int main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------PORTO %i: START SIMULAZIONE------\n", id_porto);
     /*----START SIMULAZIONE-----*/
-
-    while (i <= ptr_shm_v_conf->so_days)
+    i = 0;
+    while (i < ptr_shm_v_conf->so_days)
     {
         sleep(1);
-        expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, days_real);
-        days_real++;
-        create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, days_real); /*creazione giornaliera di lotti*/
+        expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, ptr_shm_v_conf->days_real);
         i++;
     }
     return 0;

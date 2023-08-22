@@ -4,9 +4,8 @@ progect of operative sistem based on implements a simulation of the sea's tread
 
 cose importanti da vedere:
 
-- gestire il dump, in particolare le merci dove scadono se in nave o in porto
-- GESTIRE IL CASO IN CUI NON CI SIA PIÙ DOMANDA O OFFERTA, PENSO IMPOSSIBILE DATO CHE SI GENERA TUTTI I GIORNI
-- verificare chi non sta deallocando la mem condivisa, non dealloco le code di messaggi
+- gestire il dump, le merci ancora presenti nei porti
+- non dealloco le code di messaggi
 - correggere e pulire il codice
 
   /\*

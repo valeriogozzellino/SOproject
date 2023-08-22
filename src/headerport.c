@@ -25,7 +25,6 @@ void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, 
         offerta_days[0][j].id = random_id;
         offerta_days[0][j].size = ptr_shm_good[random_id].size;
         offerta_days[0][j].life = ptr_shm_good[random_id].life;
-        /*printf("Tipi offerti---> merce id: (%i), size(%i), life(%i)\n", offerta_days[0][j].id, offerta_days[0][j].size, offerta_days[0][j].life);*/
     }
 
     for (i = 1; i < ptr_shm_var_conf->so_days; i++)
@@ -34,7 +33,7 @@ void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, 
         {
             offerta_days[i][j].id = offerta_days[0][j].id;
             offerta_days[i][j].size = offerta_days[0][j].size;
-            offerta_days[i][j].life = offerta_days[0][j].life + i;
+            offerta_days[i][j].life = ptr_shm_good[offerta_days[0][j].id].life;
         }
     }
 
@@ -55,7 +54,7 @@ void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, 
     }
 }
 
-void create_lots(struct good **domanda_days, struct good **offerta_days, int ton_days, int type_offered, int type_asked, int id_porto, int days_real)
+void create_lots(struct good **domanda_days, struct good **offerta_days, int ton_days, int type_offered, int type_asked, int id_porto, int days)
 {
     double ton_disp = ton_days / 2;
     double ton_disp2 = ton_days / 2;
@@ -70,13 +69,13 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
 
         for (j = 0; j < type_offered; j++)
         {
-            if (offerta_days[days_real][j].size < ton_disp)
+            if (offerta_days[days][j].size < ton_disp)
             {
                 creazione = 1;
-                offerta_days[days_real][j].lotti++;
+                offerta_days[days][j].lotti++;
 
-                offerta_days[days_real][j].life + days_real;
-                ton_disp -= offerta_days[days_real][j].size;
+                offerta_days[days][j].life + days;
+                ton_disp -= offerta_days[days][j].size;
             }
         }
     }
@@ -86,11 +85,11 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
         creazione = 0;
         for (j = 0; j < type_asked; j++)
         {
-            if (domanda_days[days_real][j].size < ton_disp2)
+            if (domanda_days[days][j].size < ton_disp2)
             {
                 creazione = 1;
-                domanda_days[days_real][j].lotti++;
-                ton_disp2 -= domanda_days[days_real][j].size;
+                domanda_days[days][j].lotti++;
+                ton_disp2 -= domanda_days[days][j].size;
             }
         }
     }
@@ -99,19 +98,19 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
 
     for (j = 0; j < type_offered; j++)
     {
-        if (offerta_days[days_real][j].size < ton_disp3)
+        if (offerta_days[days][j].size < ton_disp3)
         {
-            ton_disp3 -= offerta_days[days_real][j].size;
-            offerta_days[days_real][j].lotti++;
+            ton_disp3 -= offerta_days[days][j].size;
+            offerta_days[days][j].lotti++;
         }
     }
 
     for (j = 0; j < type_asked; j++)
     {
-        if (domanda_days[days_real][j].size < ton_disp2 && domanda_days[days_real][j].size < ton_disp3)
+        if (domanda_days[days][j].size < ton_disp2 && domanda_days[days][j].size < ton_disp3)
         {
-            ton_disp3 -= domanda_days[days_real][j].size;
-            domanda_days[days_real][j].lotti++;
+            ton_disp3 -= domanda_days[days][j].size;
+            domanda_days[days][j].lotti++;
         }
     }
 }
@@ -128,11 +127,35 @@ void expired_good(struct good **offerta_days, struct good *ptr_shm_good, struct 
                 {
                     if (offerta_days[i][j].id == ptr_shm_good[z].id)
                     {
-                        ptr_shm_good[j].recap.port_expired += offerta_days[i][j].lotti;
+                        ptr_shm_good[z].recap.port_expired += offerta_days[i][j].lotti;
+                        offerta_days[i][j].lotti = 0;
                     }
                 }
-                offerta_days[i][j].lotti = 0;
-                printf("PORT %i: la merce %i è scaduta\n", id_porto, offerta_days[i][j].id);
+            }
+        }
+    }
+}
+void check_good(struct good **domanda_days, struct good **offerta_days, struct var_conf *ptr_shm_v_conf, int ton_days, int type_offered, int type_asked, int id_porto)
+{
+    int i, j;
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
+    {
+
+        for (j = 0; j < type_offered; j++)
+        {
+            if (offerta_days[i][j].lotti > 0)
+            {
+                printf("DUMP offerta rimasta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[i][j].id, offerta_days[i][j].lotti);
+            }
+        }
+    }
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
+    {
+        for (j = 0; j < type_asked; j++)
+        {
+            if (domanda_days[i][j].lotti > 0)
+            {
+                printf("DUMP domanda rimasta: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
             }
         }
     }

@@ -3,7 +3,7 @@ all: bin/master bin/port bin/ship bin/storm_duration bin/swell_duration bin/mael
 prova: bin/file-prova
 
 
-CFLAGS = -g #-std=c89 -Wpedantic
+ CFLAGS = -g
 
 INCLUDES = src/*.h
 

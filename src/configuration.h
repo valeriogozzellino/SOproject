@@ -17,7 +17,7 @@
 #define PATH_DUMP "bin/dump"
 #define RD_T0_GO 1         /*processi pronti a partire*/
 #define START_SIMULATION 0 /*semaphore*/
-#define SO_DAYS ptr_shm_v_conf->so_days
+#define SO_DAYS 10
 
 #define DISTANZA_P_N_ sqrt(pow(ptr_shm_port[*id_porto + 1].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[*id_porto + 1].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2))
 #define TEST_ERROR                                                \
@@ -86,7 +86,8 @@ struct ship
     struct position pos_ship; /*posizione della nave nella mappa*/
     double capacity;          /*capacità della nave in tonnellate*/
     int speed;                /*velocitàò della nave */
-    int location;             /*posizione della naveper il dump, se in porto 1 o in mare 0 */
+    int location;             /*posizione della nave per il dump, se in porto 1 o in mare 0 */
+    int in_exchange;          /*settato a 1 se la nave sta facendo scambi di merce con il porto, altrimenti 0*/
     int sink_check;
     struct sink sink_type; /*0 affondata e 1 no*/
 };
