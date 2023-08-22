@@ -34,17 +34,22 @@ void cleanup()
 {
     if (shmdt(ptr_shm_v_conf) == -1)
     {
-        perror("ptr_shm_conf in swell_duration");
+        perror("SWELL: ERROR ptr_shm_conf in swell_duration");
         exit(1);
     }
     if (shmdt(ptr_shm_port) == -1)
     {
-        perror("ptr_shm_porto in swell_duration");
+        perror("SWELL: ERROR ptr_shm_porto in swell_duration");
+        exit(1);
+    }
+    if (shmdt(ptr_shm_ship) == -1)
+    {
+        perror("SWELL: ERROR ptr_shm_ship in swell_duration");
         exit(1);
     }
     if (shmdt(ptr_shm_sem) == -1)
     {
-        perror("ptr_shm_sem in swell_duration");
+        perror("SWELL: ERROR ptr_shm_sem in swell_duration");
         exit(1);
     }
 
@@ -53,7 +58,7 @@ void cleanup()
 
 void handle_kill_signal(int signum)
 {
-    printf("SWELL_DURATION: Ricevuto segnale di KILL.\n");
+    printf("SWELL: Ricevuto segnale di KILL.\n");
     cleanup();
 }
 void main(int argc, char *argv[])
@@ -70,14 +75,14 @@ void main(int argc, char *argv[])
     struct timespec nano_load;
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
-        printf("ricezione segnale nel swell_duration\n");
+        printf("SWELL: ricezione segnale nel swell_duration\n");
         exit(1);
     }
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("SWELL_DURATION:  configurata, pronta per partire\n");
+    printf("SWELL:  configurata, pronta per partire\n");
     /*----attendo il via dal master----*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;

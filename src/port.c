@@ -31,7 +31,7 @@ int id_porto;
 int id_shm_domanda, id_shm_offerta;
 int days_real;
 int type_offered, type_asked, ton_days;
-key_t portMessageQueueKey;
+// key_t portMessageQueueKey;
 
 void cleanup()
 {
@@ -39,39 +39,39 @@ void cleanup()
     {
         if (shmctl(id_shm_offerta, IPC_RMID, NULL) == -1)
         {
-            perror("shmctl in cleanup offerta port");
+            perror("PORT: ERROR shmctl in cleanup offerta port");
             exit(1);
         }
-        printf("Memoria condivisa deallocata.\n");
+        printf("PORT: Memoria condivisa deallocata.\n");
     }
     if (id_shm_domanda != -1)
     {
         if (shmctl(id_shm_domanda, IPC_RMID, NULL) == -1)
         {
-            perror("shmctl in cleanup  domanda port");
+            perror("PORT: ERROR shmctl in cleanup  domanda port");
             exit(1);
         }
-        printf("Memoria condivisa deallocata.\n");
+        printf("PORT: Memoria condivisa deallocata.\n");
     }
 
     if (shmdt(ptr_shm_good) == -1)
     {
-        perror("ptr_shm_good in port ");
+        perror("PORT: ERROR ptr_shm_good in port ");
         exit(1);
     }
     if (shmdt(ptr_shm_v_conf) == -1)
     {
-        perror("ptr_shm_conf in port");
+        perror("PORT: ERROR ptr_shm_conf in port");
         exit(1);
     }
     if (shmdt(ptr_shm_porto) == -1)
     {
-        perror("ptr_shm_porto in port");
+        perror("PORT: ERROR  ptr_shm_porto in port");
         exit(1);
     }
     if (shmdt(ptr_shm_sem) == -1)
     {
-        perror("ptr_shm_sem in port");
+        perror("PORT: ERROR ptr_shm_sem in port");
         exit(1);
     }
 
@@ -81,7 +81,7 @@ void cleanup()
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
-    check_good(domanda_days, offerta_days, ptr_shm_v_conf, ton_days, type_offered, type_asked, id_porto);
+    // check_good(domanda_days, offerta_days, ptr_shm_v_conf, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
 
@@ -109,15 +109,15 @@ int main(int argc, char *argv[])
         {
             id_porto = i;
             printf("PORTO %i: ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
-            portMessageQueueKey = ftok(".", ptr_shm_porto[i].id_port);
-            if (portMessageQueueKey == -1)
-            {
-                perror("ftok for message queue key");
-                exit(1);
-            }
+            // portMessageQueueKey = ftok(".", ptr_shm_porto[i].id_port);
+            // if (portMessageQueueKey == -1)
+            // {
+            //     perror("ftok for message queue key");
+            //     exit(1);
+            // }
 
-            // Store the message queue key in the struct port
-            ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
+            // // Store the message queue key in the struct port
+            // ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
         }
     }
     type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
@@ -160,14 +160,15 @@ int main(int argc, char *argv[])
     {
         create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, i);
     }
-    for (j = 0; j < type_offered; j++)
-    {
-        printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
-    }
-    for (j = 0; j < type_asked; j++)
-    {
-        printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
-    }
+    /*--------------DUMP----------------*/
+    // for (j = 0; j < type_offered; j++)
+    // {
+    //     printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
+    // }
+    // for (j = 0; j < type_asked; j++)
+    // {
+    //     printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
+    // }
     /*
     creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
     */
@@ -179,7 +180,7 @@ int main(int argc, char *argv[])
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-----PORTO %i: CONFIGURATO, PRONTO ALLA SIMULAZIONE-----\n", id_porto);
-    /*------------*/
+    /*---------------------------------------------------------------------------*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);

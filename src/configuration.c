@@ -144,7 +144,15 @@ void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good)
     {
         ptr_shm_good[i].id = i;
         ptr_shm_good[i].size = (rand() % env_var.so_size) + 1;
-        ptr_shm_good[i].life = (rand() % (env_var.so_max_vita - env_var.so_min_vita)) + env_var.so_min_vita;
+        if ((env_var.so_max_vita - env_var.so_min_vita) == 0)
+        {
+            ptr_shm_good[i].life = env_var.so_max_vita;
+        }
+        else
+        {
+
+            ptr_shm_good[i].life = (rand() % (env_var.so_max_vita - env_var.so_min_vita)) + env_var.so_min_vita;
+        }
     }
 }
 void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_conf env_var)

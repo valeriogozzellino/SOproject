@@ -34,17 +34,22 @@ void cleanup()
 {
     if (shmdt(ptr_shm_v_conf) == -1)
     {
-        perror("ptr_shm_conf in STORM");
+        perror("STORM: ERROR ptr_shm_conf ");
         exit(1);
     }
     if (shmdt(ptr_shm_port) == -1)
     {
-        perror("ptr_shm_porto in STORM");
+        perror("STORM: ERROR ptr_shm_porto ");
+        exit(1);
+    }
+      if (shmdt(ptr_shm_ship) == -1)
+    {
+        perror("STORM: ERROR ptr_shm_ship ");
         exit(1);
     }
     if (shmdt(ptr_shm_sem) == -1)
     {
-        perror("ptr_shm_sem in STORM");
+        perror("STORM: ERROR ptr_shm_sem");
         exit(1);
     }
 

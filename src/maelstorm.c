@@ -42,6 +42,11 @@ void cleanup()
         perror("ptr_shm_porto in MAELSTORM\n");
         exit(1);
     }
+    if (shmdt(ptr_shm_ship) == -1)
+    {
+        perror("ptr_shm_ship in MAELSTORM\n");
+        exit(1);
+    }
     if (shmdt(ptr_shm_sem) == -1)
     {
         perror("ptr_shm_sem in MAELSTORM\n");

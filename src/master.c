@@ -236,7 +236,6 @@ void create_port(struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf)
             perror("Execve error\n");
             exit(1);
         default:
-            sleep(1);
         }
     }
     free(id_mem_conf);
@@ -280,7 +279,6 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
             perror("Execve error\n");
             exit(1);
         default:
-            sleep(1);
         }
     }
     free(id_mem_good);
@@ -319,7 +317,6 @@ void create_dump(struct var_conf *ptr_shm_v_conf)
         perror("Execve error\n");
         exit(1);
     default:
-        sleep(1);
     }
     free(id_mem_good);
     free(id_mem_conf);
@@ -352,7 +349,6 @@ void create_storm(struct var_conf *ptr_shm_v_conf)
         perror("Execve error\n");
         exit(1);
     default:
-        sleep(1);
     }
     switch (fork())
     {
@@ -364,7 +360,6 @@ void create_storm(struct var_conf *ptr_shm_v_conf)
         perror("Execve error\n");
         exit(1);
     default:
-        sleep(1);
     }
     switch (fork())
     {
@@ -376,7 +371,6 @@ void create_storm(struct var_conf *ptr_shm_v_conf)
         perror("Execve error\n");
         exit(1);
     default:
-        sleep(1);
     }
 
     free(id_mem_conf);

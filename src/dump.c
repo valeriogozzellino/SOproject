@@ -157,9 +157,9 @@ void main(int argc, char *argv[])
         /**
          *  verifico quante merci sono scadute in mare o in porto
          */
-        for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
-        {
-            printf("DUMP: merce id[%i] ,merce life[%i],  lotti scaduti in porto:[%i], lotti scaduti in mare:[%i] \n", ptr_shm_good[j].id, ptr_shm_good[j].life, ptr_shm_good[j].recap.port_expired, ptr_shm_good[j].recap.ship_expired);
-        }
+        // for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
+        // {
+        //     printf("DUMP: merce id[%i] ,merce life[%i],  lotti scaduti in porto:[%i], lotti scaduti in mare:[%i] \n", ptr_shm_good[j].id, ptr_shm_good[j].life, ptr_shm_good[j].recap.port_expired, ptr_shm_good[j].recap.ship_expired);
+        // }
     }
 }
