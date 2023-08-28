@@ -20,11 +20,11 @@
 #define MAX_MESSAGE_SIZE 100
 
 /* Structure for the message data */
-struct Message
-{
-    long messageType;
-    char messageText[MAX_MESSAGE_SIZE];
-};
+// struct Message
+// {
+//     long messageType;
+//     char messageText[MAX_MESSAGE_SIZE];
+// };
 /**
  * funzione di posizionaento nel primo porto della mappa, dopo la creazione della nave , quest'ultima vine posizionata nella mappa in modo
  * randomico, grazie a questa funzione la nave raggiungerà il porto più vicino

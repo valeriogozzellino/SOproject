@@ -103,7 +103,7 @@ void main(int argc, char *argv[])
         }
         else /*altrimenti significa che non ci sono navi attaccate e semplicemente tolgo la risorsa della memoria condivisa*/
         {
-            printf("SWELL RICHIEDE LA RISORSA DELLA MEMORIA CONDIVISA\n");
+            // printf("SWELL RICHIEDE LA RISORSA DELLA MEMORIA CONDIVISA\n");
             sops.sem_num = random_port;
             sops.sem_op = -1;
             sops.sem_flg = 0;

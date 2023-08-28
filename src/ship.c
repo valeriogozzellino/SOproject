@@ -32,7 +32,7 @@ int id_ship;
 int *ptr_shm_sem;
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_ship, sh_mem_id_semaphore;
 int id_sem_banchina;
-// int portMessageQueue;
+int portMessageQueue;
 void cleanup()
 {
 
@@ -134,10 +134,35 @@ int main(int argc, char *argv[])
     sh_mem_id_semaphore = atoi(argv[5]);
     /*-----conversion and attached of shared memory----*/
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0400);
+    if (ptr_shm_v_conf == NULL)
+    {
+        perror("Error in attached ptr_shm_v_conf\n");
+        exit(1);
+    }
     ptr_shm_good = shmat(sh_mem_id_good, NULL, 0600);
+    if (ptr_shm_good == NULL)
+    {
+        perror("Error in attached ptr_shm_good\n");
+        exit(1);
+    }
     ptr_shm_port = shmat(sh_mem_id_port, NULL, 0400);
+    if (ptr_shm_port == NULL)
+    {
+        perror("Error in attached ptr_shm_port\n");
+        exit(1);
+    }
     ptr_shm_ship = shmat(sh_mem_id_ship, NULL, 0600);
+    if (ptr_shm_ship == NULL)
+    {
+        perror("Error in attached ptr_shm_ship\n");
+        exit(1);
+    }
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
+    if (ptr_shm_sem == NULL)
+    {
+        perror("Error in attached ptr_shm_sem\n");
+        exit(1);
+    }
     /*-----alloco un array per il trasporto di merci-----*/
     stiva = malloc(sizeof(struct good) * ptr_shm_v_conf->so_days);
     struct good *domanda_porto[SO_DAYS];
@@ -203,13 +228,12 @@ int main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         {
             ptr_shm_port[*id_porto].banchine_occupate++;
-            // portMessageQueue = msgget(ptr_shm_port[*id_porto].message_queue_key, 0600 | IPC_CREAT);
-            // if (portMessageQueue == -1)
-            // {
-            //     perror("Failed to create/open message queue for port");
-            //     exit(1);
-            // }
-            // sendAttackMessage(portMessageQueue, "Attack on the quay!");
+            if ((portMessageQueue = msgget(ptr_shm_port[*id_porto].message_queue_key, 0600)) == -1)
+            {
+                perror("Failed to create/open message queue for port");
+                exit(1);
+            }
+            sendAttackMessage(portMessageQueue, "Attack on the quay!");
             ship_expired_good(ptr_shm_ship, ptr_shm_v_conf, ptr_shm_good, id_ship, stiva);
             // printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 0;
@@ -231,8 +255,10 @@ int main(int argc, char *argv[])
                 merce_scambiata = 0;
                 if (ptr_shm_ship[id_ship].capacity != ptr_shm_v_conf->so_capacity)
                 {
+
                     for (i = 0; i <= ptr_shm_v_conf->days_real; i++)
                     {
+
                         for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
                         {
                             for (z = 0; z < ptr_shm_port[*id_porto].n_type_asked; z++)
@@ -241,12 +267,12 @@ int main(int argc, char *argv[])
                                 {
                                     while ((stiva[i][j].lotti > 0) && (domanda_porto[ptr_shm_v_conf->days_real][z].lotti > 0))
                                     {
-                                        // printf("SHIP %i:  sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[i][j].id, domanda_porto[ptr_shm_v_conf->days_real][z].lotti);
+                                        printf("SHIP %i:  sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[i][j].id, domanda_porto[ptr_shm_v_conf->days_real][z].lotti);
                                         stiva[i][j].lotti--;
                                         domanda_porto[ptr_shm_v_conf->days_real][z].lotti--;
                                         domanda_porto[ptr_shm_v_conf->days_real][z].recap.consegnata = 1;
                                         ptr_shm_ship[id_ship].capacity += domanda_porto[ptr_shm_v_conf->days_real][z].size;
-                                        ptr_shm_port[*id_porto].g_received++;
+                                        ptr_shm_port[*id_porto].g_received += offerta_porto[ptr_shm_v_conf->days_real][z].size;
                                         merce_scambiata = merce_scambiata + domanda_porto[ptr_shm_v_conf->days_real][z].size;
                                     }
                                 }
@@ -256,7 +282,7 @@ int main(int argc, char *argv[])
                     if (merce_scambiata != 0)
                     {
                         tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-                        // printf("SHIP %i: tempo di carica : %f \n", id_ship, tmp_load);
+                        printf("SHIP %i: tempo di scarica : %f \n", id_ship, tmp_load);
                         nano_load.tv_sec = (int)tmp_load;                            /*take seconds*/
                         nano_load.tv_nsec = (tmp_load - (int)tmp_load) * 1000000000; /*take nanoseconds*/
                         nanosleep(&nano_load, NULL);
@@ -281,7 +307,7 @@ int main(int argc, char *argv[])
                                         offerta_porto[ptr_shm_v_conf->days_real][z].recap.ritirata = 1;
                                         stiva[i][j].lotti++;
                                         ptr_shm_ship[id_ship].capacity -= offerta_porto[ptr_shm_v_conf->days_real][z].size;
-                                        ptr_shm_port[*id_porto].g_send++;
+                                        ptr_shm_port[*id_porto].g_send += offerta_porto[ptr_shm_v_conf->days_real][z].size;
                                         merce_scambiata = merce_scambiata + offerta_porto[ptr_shm_v_conf->days_real][z].size;
                                         // printf("SHIP %i: MERCE SCAMBIATA : %f \n", id_ship, merce_scambiata);
                                     }

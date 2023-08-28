@@ -14,6 +14,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <fcntl.h>
 #include "configuration.h"
 #include "headerport.h"
 #define ACCESS 0600
@@ -31,10 +32,16 @@ int id_porto;
 int id_shm_domanda, id_shm_offerta;
 int days_real;
 int type_offered, type_asked, ton_days;
-// key_t portMessageQueueKey;
-
+key_t portMessageQueueKey;
+int id_msg;
 void cleanup()
 {
+    printf("ID MSG: %i\n", id_msg);
+    if (msgctl(id_msg, IPC_RMID, NULL) == -1)
+    {
+        perror("PORT: ERROR delete msg");
+        exit(1);
+    }
     if (id_shm_offerta != -1)
     {
         if (shmctl(id_shm_offerta, IPC_RMID, NULL) == -1)
@@ -81,7 +88,7 @@ void cleanup()
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
-    // check_good(domanda_days, offerta_days, ptr_shm_v_conf, ton_days, type_offered, type_asked, id_porto);
+    check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
 
@@ -92,14 +99,35 @@ int main(int argc, char *argv[])
     int i, j;
     double ton_days;
     size_t size1, size2;
+    unsigned int random_key;
     sh_mem_id_good = atoi(argv[1]);
     sh_mem_id_conf = atoi(argv[2]);
     sh_mem_id_port = atoi(argv[3]);
     sh_mem_id_semaphore = atoi(argv[4]);
     ptr_shm_good = shmat(sh_mem_id_good, NULL, ACCESS);
+    if (ptr_shm_good == NULL)
+    {
+        perror("Failed to attach ptr_shm_good in port ");
+        exit(1);
+    }
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, ACCESS);
+    if (ptr_shm_v_conf == NULL)
+    {
+        perror("Failed to attach ptr_shm_v_conf in port ");
+        exit(1);
+    }
     ptr_shm_porto = shmat(sh_mem_id_port, NULL, ACCESS);
+    if (ptr_shm_porto == NULL)
+    {
+        perror("Failed to attach ptr_shm_porto in port ");
+        exit(1);
+    }
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, ACCESS);
+    if (ptr_shm_sem == NULL)
+    {
+        perror("Failed to attach ptr_shm_sem in port ");
+        exit(1);
+    }
     srand(time(NULL));
     days_real = 0;
     port_sorting(ptr_shm_v_conf, ptr_shm_porto);
@@ -109,17 +137,34 @@ int main(int argc, char *argv[])
         {
             id_porto = i;
             printf("PORTO %i: ptr_id_porto==[%i]\n", id_porto, ptr_shm_porto[i].id_port);
-            // portMessageQueueKey = ftok(".", ptr_shm_porto[i].id_port);
-            // if (portMessageQueueKey == -1)
-            // {
-            //     perror("ftok for message queue key");
-            //     exit(1);
-            // }
-
-            // // Store the message queue key in the struct port
-            // ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
         }
     }
+    /*---------------------------------------------------------------------------------------------*/
+    int random_fd = open("/dev/urandom", 0400);
+    if (random_fd == -1)
+    {
+        perror("open /dev/urandom");
+        exit(1);
+    }
+
+    if (read(random_fd, &random_key, sizeof(random_key)) == -1)
+    {
+        perror("read /dev/urandom");
+        close(random_fd);
+        exit(1);
+    }
+
+    close(random_fd);
+
+    key_t portMessageQueueKey = random_key;
+    // Store the message queue key in the struct port
+    ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
+    if ((id_msg = msgget(portMessageQueueKey, 0600 | IPC_CREAT)) == -1)
+    {
+        perror("Failed to create/open message queue for port");
+        exit(1);
+    }
+    /*---------------------------------------------------------------------------------------------*/
     type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
     type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
     ptr_shm_porto[id_porto].n_type_asked = type_asked;
@@ -144,6 +189,7 @@ int main(int argc, char *argv[])
     {
         domanda_days[i] = shmat(id_shm_domanda, NULL, 0);
     }
+
     /*imposto l'handler*/
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
     {
@@ -161,14 +207,14 @@ int main(int argc, char *argv[])
         create_lots(domanda_days, offerta_days, ton_days, type_offered, type_asked, id_porto, i);
     }
     /*--------------DUMP----------------*/
-    // for (j = 0; j < type_offered; j++)
-    // {
-    //     printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
-    // }
-    // for (j = 0; j < type_asked; j++)
-    // {
-    //     printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
-    // }
+    for (j = 0; j < type_offered; j++)
+    {
+        printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
+    }
+    for (j = 0; j < type_asked; j++)
+    {
+        printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
+    }
     /*
     creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
     */
@@ -186,12 +232,11 @@ int main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("-------PORTO %i: START SIMULAZIONE------\n", id_porto);
     /*----START SIMULAZIONE-----*/
-    i = 0;
-    while (i < ptr_shm_v_conf->so_days)
+    for (i = 0;; i++)
     {
         sleep(1);
+        receive_message(id_msg);
         expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, ptr_shm_v_conf->days_real);
-        i++;
     }
     return 0;
 }

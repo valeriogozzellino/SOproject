@@ -81,24 +81,12 @@ void main(int argc, char *argv[])
     ptr_shm_sem = shmat(sh_mem_id_semaphore, NULL, 0600);
     srand(time(NULL));
     /*-----dichiarazioni di variabili-----*/
-    struct good *domanda_porto[ptr_shm_v_conf->so_days];
-    struct good *offerta_porto[ptr_shm_v_conf->so_days];
     int ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell;
     struct good *status = malloc(sizeof(struct good) * ptr_shm_v_conf->so_days);
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
         printf("ricezione segnale nel DUMP\n");
         exit(1);
-    }
-    /*--------mi attacco alla memoria condivisa dei porti----- */
-    for (j = 0; j < ptr_shm_v_conf->so_porti; j++)
-    {
-
-        for (i = 0; i < ptr_shm_v_conf->so_days; i++)
-        {
-            offerta_porto[i] = shmat(ptr_shm_port[j].id_shm_offerta, NULL, 0);
-            domanda_porto[i] = shmat(ptr_shm_port[j].id_shm_domanda, NULL, 0);
-        }
     }
     /*-------inizio processo-------*/
     sops.sem_flg = 0;
@@ -152,14 +140,14 @@ void main(int argc, char *argv[])
                 }
             }
         }
-        printf("DUMP: ci sono : [%d] navi in mare cariche,\n [%d]navi in mare vuote\n [%d] navi in porto\n [%d] navi colpite da maelstorm\n [%d] navi colpite da storm\n [%d] navi colpite da swell\n", ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell);
-        printf("DUMP: numero di giorni: %i\n", ptr_shm_v_conf->days_real);
+        printf("DUMP: there are :\n [%d] ship full on sea,\n [%d]ship empty on sea \n [%d] ship in the port \n [%d] ship hit by maelstorm\n [%d] ship  hit by storm\n [%d] ship hit by swell\n", ship_cariche, ship_vuote, ship_porto, ship_maelstorm, ship_storm, ship_swell);
+        printf("DUMP: current DAY: %i\n", ptr_shm_v_conf->days_real);
         /**
          *  verifico quante merci sono scadute in mare o in porto
          */
         for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
         {
-            printf("DUMP: merce id[%i] ,merce life[%i],  lotti scaduti in porto:[%i], lotti scaduti in mare:[%i] \n", ptr_shm_good[j].id, ptr_shm_good[j].life, ptr_shm_good[j].recap.port_expired, ptr_shm_good[j].recap.ship_expired);
+            printf("DUMP: goods id[%i] , goods life[%i],  lotti scaduti in porto:[%i], lotti scaduti in mare:[%i] \n", ptr_shm_good[j].id, ptr_shm_good[j].life, ptr_shm_good[j].recap.port_expired, ptr_shm_good[j].recap.ship_expired);
         }
     }
 }

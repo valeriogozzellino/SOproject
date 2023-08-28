@@ -111,10 +111,10 @@ struct port
     int message_queue_key;
 };
 
-struct mymsg
+struct Message
 {
-    long mtype;
-    char mtext[100];
+    long messageType;
+    char messageText[100];
 };
 /*funzione che mi apre il file */
 void open_file(FILE **f_c);

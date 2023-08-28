@@ -92,7 +92,7 @@ void main(int argc, char *argv[])
     for (i = 0;; i++)
     {
         random_ship = rand() % (ptr_shm_v_conf->so_navi);
-        printf("STORM: nave da comlpire : %i\n", random_ship);
+        //printf("STORM: nave da comlpire : %i\n", random_ship);
         sleep(1);
         if (kill(ptr_shm_ship[random_ship].pid, SIGUSR1) != -1)
         {

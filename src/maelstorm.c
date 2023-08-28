@@ -100,7 +100,7 @@ void main(int argc, char *argv[])
         random_ship = (rand() % (ptr_shm_v_conf->so_navi - i));
         nano_load.tv_sec = (int)tmp_sleep;                             /*take seconds*/
         nano_load.tv_nsec = (tmp_sleep - (int)tmp_sleep) * 1000000000; /*take nanoseconds*/
-        printf("MAELSTORM: kill della nave tra: %f\n", tmp_sleep);
+        // printf("MAELSTORM: kill della nave tra: %f\n", tmp_sleep);
         nanosleep(&nano_load, NULL);
         if (kill(ptr_shm_ship[random_ship].pid, SIGINT) != -1)
         {

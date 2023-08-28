@@ -135,7 +135,7 @@ void expired_good(struct good **offerta_days, struct good *ptr_shm_good, struct 
         }
     }
 }
-void check_good(struct good **domanda_days, struct good **offerta_days, struct var_conf *ptr_shm_v_conf, int ton_days, int type_offered, int type_asked, int id_porto)
+void check_good(struct good **domanda_days, struct good **offerta_days, struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_porto, int ton_days, int type_offered, int type_asked, int id_porto)
 {
     int i, j;
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)
@@ -158,5 +158,20 @@ void check_good(struct good **domanda_days, struct good **offerta_days, struct v
                 printf("DUMP domanda rimasta: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
             }
         }
+    }
+    printf("PORT %i: merce totale offerta: %i\n", id_porto, ptr_shm_porto[id_porto].g_send);
+    printf("PORT %i: merce totale domandata: %i\n", id_porto, ptr_shm_porto[id_porto].g_received);
+}
+void receive_message(int id_msg)
+{
+    struct Message msg;
+    msg.messageType = 0; // Set the message type (can be any positive integer)
+    if (msgrcv(id_msg, &msg, sizeof(msg.messageText), msg.messageType, IPC_NOWAIT) == -1)
+    {
+        perror("errore nella msg \n");
+    }
+    else
+    {
+        printf("PORT: ship attack the port (%s)\n", msg.messageText);
     }
 }
