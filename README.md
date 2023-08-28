@@ -6,7 +6,7 @@ cose importanti da vedere:
 
 - gestire il dump, le merci ancora presenti nei porti
 - con numeri molto grandi non vengono terminati totalmente i processi a causa delle ultime stampe fatte nella memoria condivisa, forse potrebbe essere conveniente deallocare prima tutti le varie momorie condivise con master e tutti gli altri processi, poi fare il dump di terminazione e infine deallocare la memoria condivisa di domanda e offerta
-- non dealloco le code di messaggi
+- non dealloco le code di messaggi, gestire l'invio(in headership e in ship con la funzione sendAttack), gestire la ricezione con msgrcv in heapport
 - correggere e pulire il codice
 
   /\*

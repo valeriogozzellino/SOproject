@@ -61,27 +61,22 @@ int main()
     {
         TEST_ERROR;
     }
-    printf("id mem cond %i\n", sh_mem_id_conf);
     if ((sh_mem_id_good = shmget(IPC_PRIVATE, (sizeof(struct good) * env_var.so_merci), 0600)) < 0)
     {
         TEST_ERROR;
     }
-    printf("id mem good %i\n", sh_mem_id_good);
     if ((sh_mem_id_port = shmget(IPC_PRIVATE, (sizeof(struct port) * env_var.so_porti), 0600)) < 0)
     {
         TEST_ERROR;
     }
-    printf("id mem port %i\n", sh_mem_id_port);
     if ((sh_mem_id_ship = shmget(IPC_PRIVATE, (sizeof(struct ship) * env_var.so_navi), 0600)) < 0)
     {
         TEST_ERROR;
     }
-    printf("id mem ship %i\n", sh_mem_id_ship);
     if ((sh_mem_id_semaphore = shmget(IPC_PRIVATE, (sizeof(int) * 3), 0600)) < 0)
     {
         TEST_ERROR;
     }
-    printf("id mem semaphore %i\n", sh_mem_id_semaphore);
 
     /*------pointer to shared memory-----*/
     ptr_shm_v_conf = shmat(sh_mem_id_conf, NULL, 0600);
@@ -123,26 +118,26 @@ int main()
     create_dump(ptr_shm_v_conf);
 
     /*----ALL PROCESS CREATED-----*/
-    printf("MASTER: tutti i processi sono stati creati: %i\n", NUM_PROCESSI);
+    printf("----MASTER: ALL PX CREATE: %i----\n", NUM_PROCESSI);
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
     semop(sem_id, &sops, 1);
     /*----START SIMULATION-----*/
-    printf("------------SONO IL MASTER DO IL VIA-----------\n");
+    printf("----MASTER: 'GOOO'----\n");
     sops.sem_flg = 0;
     sops.sem_num = START_SIMULATION;
     sops.sem_op = NUM_PROCESSI;
     semop(sem_id, &sops, 1);
-    printf("-----------MASTER: HO RILASCIATO I PROCESSI-------\n");
+    printf("----MASTER: I ISSUED THE PX----\n");
     /*----START TEMPO DI SIMULAZIONE, LE NAVI GURANO FINO A RICEZIONE DEL SEGNALE -----*/
     alarm(env_var.so_days);
-    printf("---------MASTER: HO ATTIVATO L'ALARM----------\n");
+    printf("----MASTER: ALARM ACTIVETED----\n");
     active_process = NUM_PROCESSI;
     while (active_process > 0)
     {
         sleep(1); /*attende un giorno = 1sec*/
-        printf("----------MASTER: È PASSATO UN GIORNO---------\n");
+        printf("----MASTER: IT'S BEEN A DAY----\n");
         ptr_shm_v_conf->days_real++;
         /**
          * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
@@ -174,7 +169,7 @@ int main()
     }
 
     /*--------TERMINAZIONE DELLA SIMULAZIONE-----------------*/
-    printf("MASTER: sto per cancellare la mem condivisa\n");
+    printf("----MASTER: I'M ABOUT TO DELETE----\n");
 
     /*------elimino la memoria condivisa-----*/
     if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
@@ -200,7 +195,7 @@ int main()
     semctl(sem_id_banchine, 0, IPC_RMID);
     semctl(sem_id_shm, 0, IPC_RMID);
     semctl(sem_id, 0, IPC_RMID);
-    printf("ho cancellato tutto \n");
+    printf("----MASTER: I'M DELETE ALL----\n");
     return 0;
 }
 
@@ -273,7 +268,7 @@ void create_ship(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf)
         case 0:
             ptr_shm_ship[j].pid = getpid();
 
-            printf("----EXECVP DELLA %i^NAVE  CON PID:%i-----\n", j, getpid());
+            printf("----EXECVP OF SHIP %i^ WITH PID:%i-----\n", j, getpid());
 
             execvp(PATH_SHIP, args_ship);
             perror("Execve error\n");
@@ -420,6 +415,11 @@ void signalHandler(int signum)
             {
                 printf("MASTER: segnale di terminazione inviato correttamente ai processi di controllo\n");
             }
+        }
+        printf("MASTER: ATTENDO LA TERMINAZIONE DEI PROCESSI PRIMA DI ELIMINARE LE MEMORIA CONDIVISE\n");
+        while (wait(&status) != -1)
+        {
+            printf("MASTER: attendo terminazione dei processi\n");
         }
         if (shmctl(sh_mem_id_conf, IPC_RMID, NULL) == -1)
         {
