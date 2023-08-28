@@ -228,12 +228,7 @@ int main(int argc, char *argv[])
         if (semop(ptr_shm_sem[0], &sops, 1) != -1)
         {
             ptr_shm_port[*id_porto].banchine_occupate++;
-            if ((portMessageQueue = msgget(ptr_shm_port[*id_porto].message_queue_key, 0600)) == -1)
-            {
-                perror("Failed to create/open message queue for port");
-                exit(1);
-            }
-            sendAttackMessage(portMessageQueue, "Attack on the quay!");
+            sendAttackMessage(ptr_shm_port[*id_porto].message_queue_key, "Attack on the quay!");
             ship_expired_good(ptr_shm_ship, ptr_shm_v_conf, ptr_shm_good, id_ship, stiva);
             // printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 0;

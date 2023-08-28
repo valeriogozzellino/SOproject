@@ -99,7 +99,7 @@ void sendAttackMessage(int portMessageQueue, const char *message)
     struct Message msg;
     msg.messageType = 1; // Set the message type (can be any positive integer)
     strncpy(msg.messageText, message, MAX_MESSAGE_SIZE);
-
+    printf("SHIP: id MSG %i\n", portMessageQueue);
     if (msgsnd(portMessageQueue, &msg, sizeof(msg.messageText), IPC_NOWAIT) == -1)
     {
         perror("Failed to send message to port");

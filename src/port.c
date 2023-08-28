@@ -158,12 +158,14 @@ int main(int argc, char *argv[])
 
     key_t portMessageQueueKey = random_key;
     // Store the message queue key in the struct port
-    ptr_shm_porto[i].message_queue_key = portMessageQueueKey;
+
     if ((id_msg = msgget(portMessageQueueKey, 0600 | IPC_CREAT)) == -1)
     {
         perror("Failed to create/open message queue for port");
         exit(1);
     }
+    ptr_shm_porto[id_porto].message_queue_key = id_msg;
+    printf("PORTO: ID MSG SHM [%i] variabile[%i]\n", ptr_shm_porto[i].message_queue_key, id_msg);
     /*---------------------------------------------------------------------------------------------*/
     type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
     type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */

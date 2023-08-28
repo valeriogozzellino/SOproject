@@ -165,7 +165,7 @@ void check_good(struct good **domanda_days, struct good **offerta_days, struct v
 void receive_message(int id_msg)
 {
     struct Message msg;
-    msg.messageType = 0; // Set the message type (can be any positive integer)
+    msg.messageType = 1; // Set the message type (can be any positive integer)
     if (msgrcv(id_msg, &msg, sizeof(msg.messageText), msg.messageType, IPC_NOWAIT) == -1)
     {
         perror("errore nella msg \n");
