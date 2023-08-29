@@ -28,11 +28,9 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     int i;
     for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
-        /*inserisco il valore assoluto*/
         array_indici[i] = ptr_shm_port[i].id_port;
         array_distance[i] = sqrt(pow(ptr_shm_port[i].pos_porto.x - ptr_shm_ship[id_ship].pos_ship.x, 2) + pow(ptr_shm_port[i].pos_porto.y - ptr_shm_ship[id_ship].pos_ship.y, 2));
     }
-    /*seleziono la distanza minore*/
     for (i = 0; i < ptr_shm_v_conf->so_porti; i++)
     {
         if (array_distance[indice_first_port] > array_distance[i])
@@ -45,14 +43,12 @@ void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_po
     ship_movement.tv_sec = (time_t)tmp_shift;
     ship_movement.tv_nsec = (tmp_shift - ship_movement.tv_sec) * 1e9; /*take nanoseconds*/
     nanosleep(&ship_movement, NULL);
-    /*----ora devo modificare la x e la y della nave----*/
+    /*----load the new position----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[indice_first_port].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[indice_first_port].pos_porto.y;
-
-    // printf("------> SHIP %i nel porto con id: %i \n", id_ship, *id_porto);
     free(array_distance);
 }
-/*------funzione che mi permette di spostarmi nella mappa da porto a porto------*/
+
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship)
 {
     /*----utilities parameter----*/
@@ -74,7 +70,7 @@ void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct v
         nanosleep(&nanotime, NULL);
         (*id_porto)++;
     }
-    /*----ora devo modificare la x e la y della nave----*/
+    /*----load new position ----*/
     ptr_shm_ship[id_ship].pos_ship.x = ptr_shm_port[*id_porto].pos_porto.x;
     ptr_shm_ship[id_ship].pos_ship.y = ptr_shm_port[*id_porto].pos_porto.y;
 }
@@ -99,14 +95,9 @@ void sendAttackMessage(int portMessageQueue, const char *message)
     struct Message msg;
     msg.messageType = 1; // Set the message type (can be any positive integer)
     strncpy(msg.messageText, message, MAX_MESSAGE_SIZE);
-    // printf("SHIP: id MSG %i\n", portMessageQueue);
     if (msgsnd(portMessageQueue, &msg, sizeof(msg.messageText), IPC_NOWAIT) == -1)
     {
-        perror("Failed to send message to port");
+        perror("Failed to send message to port\n");
         exit(1);
-    }
-    else
-    {
-        printf("MESSAGGIO INVIATO AL PORTO");
     }
 }

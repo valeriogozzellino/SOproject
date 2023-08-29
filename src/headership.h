@@ -19,29 +19,31 @@
 #include "configuration.h"
 #define MAX_MESSAGE_SIZE 100
 
-/* Structure for the message data */
-// struct Message
-// {
-//     long messageType;
-//     char messageText[MAX_MESSAGE_SIZE];
-// };
 /**
- * funzione di posizionaento nel primo porto della mappa, dopo la creazione della nave , quest'ultima vine posizionata nella mappa in modo
- * randomico, grazie a questa funzione la nave raggiungerà il porto più vicino
+ * ship_move_first_position: This function moves a ship to the nearest port's position at the start.
+ * It calculates distances between the ship and all available ports,then selects the closest port.
+ * It uses nanosleep to simulate the travel time and updates the ship's position.
+ * It's useful for initializing the ship's position upon application launch.
  */
 void ship_move_first_position(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
 /**
- * funzione di movimento della nave, la nave si sposta lungo un tragitto prestabilito dalla distanza dei porti dal centro
+ * ship_move_to: This function moves a ship to the next port.
+ * If the current port is the last one in the array of distance about the port in the position (0,0),the ship is moved to the first port.
+ * It uses nanosleep to simulate the travel time based on the ship's speed.
+ * The ship's position is updated to the new port's position. It's useful for advancing a ship along the predefined route between ports.
  */
 void ship_move_to(struct ship *ptr_shm_ship, struct port *ptr_shm_port, struct var_conf *ptr_shm_v_conf, int *id_porto, int id_ship);
 /**
- * funzione richimaata nel momento in cui una nae arriva in porto e si trova sulla banchina, la nave verifica quali merce sono scadute nel viaggio
- * e lo notifica
+ * ship_expired_good: This function manages expired goods on a ship. It iterates through all goods on the ship, and if a good has expired on any of the simulation
+ * days and still has available lots,
+ * it updates the good's statistics and resets the lot count to zero. It's useful for monitoring and handling expired goods on the ship during the simulation.
  */
 void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_conf, struct good *ptr_shm_good, int id_ship, struct good **stiva);
 
 /**
- * funzione che avverte un porto di essere attaccato alla sua banchina
+ * sendAttackMessage: This function sends an attack message to the message queue associated with a port's dock.
+ * It prepares a message with a specific type and text and sends it to the message queue using msgsnd.
+ * It's useful for sending attack notifications or similar events to a port within the system.
  */
 void sendAttackMessage(int portMessageQueue, const char *message);
 #endif /*__HEADERSHIP_H */

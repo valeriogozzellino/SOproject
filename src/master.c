@@ -123,25 +123,22 @@ int main()
     sops.sem_num = RD_T0_GO;
     sops.sem_op = -NUM_PROCESSI;
     semop(sem_id, &sops, 1);
-    /*----START SIMULATION-----*/
+    /*----leave the resources to start simulation-----*/
     printf("----MASTER: 'GOOO'----\n");
     sops.sem_flg = 0;
     sops.sem_num = START_SIMULATION;
     sops.sem_op = NUM_PROCESSI;
     semop(sem_id, &sops, 1);
     printf("----MASTER: I ISSUED THE PX----\n");
-    /*----START TEMPO DI SIMULAZIONE, LE NAVI GURANO FINO A RICEZIONE DEL SEGNALE -----*/
+    /*----START time simulation, master check the px active -----*/
     alarm(env_var.so_days);
     printf("----MASTER: ALARM ACTIVETED----\n");
     active_process = NUM_PROCESSI;
     while (active_process > 0)
     {
-        sleep(1); /*attende un giorno = 1sec*/
+        sleep(1); /*sleep one day*/
         printf("----MASTER: IT'S BEEN A DAY----\n");
         ptr_shm_v_conf->days_real++;
-        /**
-         * decremento i processi attivi se questi ultimi hanno pid minore di zero, significa che hatto terminato
-         */
         active_ship = 0;
         for (i = 0; i < env_var.so_navi; i++)
         {
@@ -155,7 +152,7 @@ int main()
                 active_ship++;
             }
         }
-        if (active_ship <= 0)
+        if (active_ship == 0)
         {
             signalHandler(2);
         }

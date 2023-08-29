@@ -19,6 +19,7 @@ void create_goods(struct var_conf *ptr_shm_var_conf, struct good *ptr_shm_good, 
 {
     int j, i;
     int random_id;
+    srand(time(NULL) ^ getpid());
     for (j = 0; j < type_offered; j++)
     {
         random_id = rand() % ptr_shm_var_conf->so_merci;
@@ -73,8 +74,7 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
             {
                 creazione = 1;
                 offerta_days[days][j].lotti++;
-
-                offerta_days[days][j].life + days;
+                offerta_days[days][j].life += days;
                 ton_disp -= offerta_days[days][j].size;
             }
         }
@@ -102,6 +102,7 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
         {
             ton_disp3 -= offerta_days[days][j].size;
             offerta_days[days][j].lotti++;
+            offerta_days[days][j].life += days;
         }
     }
 
@@ -145,7 +146,7 @@ void check_good(struct good **domanda_days, struct good **offerta_days, struct v
         {
             if (offerta_days[i][j].lotti > 0)
             {
-                printf("DUMP offerta rimasta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[i][j].id, offerta_days[i][j].lotti);
+                printf("DUMP goods offered remained in the day %i: Porto [%i] -->  merci [%i] --> [%i] lotti \n", i, id_porto, offerta_days[i][j].id, offerta_days[i][j].lotti);
             }
         }
     }
@@ -155,7 +156,7 @@ void check_good(struct good **domanda_days, struct good **offerta_days, struct v
         {
             if (domanda_days[i][j].lotti > 0)
             {
-                printf("DUMP domanda rimasta: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
+                printf("DUMP goods asked remained in the day %i: Porto [%i] -->  merce [%i] --> [%i] lotti \n", i, id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
             }
         }
     }
@@ -168,7 +169,6 @@ void receive_message(int id_msg)
     msg.messageType = 1; // Set the message type (can be any positive integer)
     if (msgrcv(id_msg, &msg, sizeof(msg.messageText), msg.messageType, IPC_NOWAIT) == -1)
     {
-        perror("errore nella msg \n");
     }
     else
     {

@@ -87,7 +87,7 @@ void main(int argc, char *argv[])
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-------STORM : START SIMULATION-------\n");
+    printf("----STORM : START SIMULATION----\n");
 
     for (i = 0;; i++)
     {

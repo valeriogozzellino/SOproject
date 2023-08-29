@@ -87,7 +87,7 @@ void main(int argc, char *argv[])
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-------SWELL_DURATION: START SIMULATION-------\n");
+    printf("----SWELL_DURATION: START SIMULATION----\n");
 
     for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
     {

@@ -93,12 +93,12 @@ void main(int argc, char *argv[])
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("DUMP:  configurato, pronto per partire\n");
+    printf("DUMP:  configurated, ready to go\n");
     /*----attendo il via dal master----*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-------DUMP : START SIMULATION-------\n");
+    printf("----DUMP : START SIMULATION----\n");
     /*---chiamare una funzione dump oer gestire il dump a terminazione ------*/
     for (i = 0; i < SO_DAYS; i++)
     {

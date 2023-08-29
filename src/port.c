@@ -36,7 +36,6 @@ key_t portMessageQueueKey;
 int id_msg;
 void cleanup()
 {
-    printf("ID MSG: %i\n", id_msg);
     if (msgctl(id_msg, IPC_RMID, NULL) == -1)
     {
         perror("PORT: ERROR delete msg");
@@ -88,7 +87,7 @@ void cleanup()
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
-    check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
+    // check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
 
@@ -165,7 +164,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
     ptr_shm_porto[id_porto].message_queue_key = id_msg;
-    printf("PORTO: ID MSG SHM [%i] variabile[%i]\n", ptr_shm_porto[i].message_queue_key, id_msg);
     /*---------------------------------------------------------------------------------------------*/
     type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
     type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
@@ -202,7 +200,6 @@ int main(int argc, char *argv[])
     creo la merce e i lotti
     -----*/
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
-    printf("PORTO %i: tonnellate al giorno----> [%f]\n", id_porto, ton_days);
     create_goods(ptr_shm_v_conf, ptr_shm_good, domanda_days, offerta_days, type_offered, type_asked);
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
@@ -211,18 +208,17 @@ int main(int argc, char *argv[])
     /*--------------DUMP----------------*/
     for (j = 0; j < type_offered; j++)
     {
-        printf("DUMP offerta: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
+        printf("DUMP offert: Porto [%i] -->  merci [%i] --> [%i] lotti \n", id_porto, offerta_days[0][j].id, offerta_days[0][j].lotti);
     }
     for (j = 0; j < type_asked; j++)
     {
-        printf("DUMP domanda: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
+        printf("DUMP asked: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
     }
     /*
     creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
     */
 
     /*---------------------------------------------------------------------------*/
-    printf("PORTO %i: sto per avvertire il master di essere pronto\n", id_porto);
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
@@ -232,11 +228,11 @@ int main(int argc, char *argv[])
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-------PORTO %i: START SIMULAZIONE------\n", id_porto);
+    printf("----PORTO %i: START SIMULAZIONE----\n", id_porto);
     /*----START SIMULAZIONE-----*/
     for (i = 0;; i++)
     {
-        sleep(1);
+        // sleep(1);
         receive_message(id_msg);
         expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, ptr_shm_v_conf->days_real);
     }
