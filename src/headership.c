@@ -90,6 +90,7 @@ void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_con
         }
     }
 }
+
 void sendAttackMessage(int portMessageQueue, const char *message)
 {
     struct Message msg;

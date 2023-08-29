@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("SHIP %i:  configyrated, ready to go,  PID[%i]\n", id_ship, getpid());
+    printf("SHIP %i:  CONFIGURATED, READY TO GO  PID[%i]\n", id_ship, getpid());
     /*----attendo il via dal master----*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
@@ -221,7 +221,6 @@ int main(int argc, char *argv[])
     /*--------execution and ship's job------*/
     for (i = 0;; i++)
     {
-        printf("SHIP %i:  --RICHIEDE-- l'accesso  alla banchina del porto[%i]\n", id_ship, *id_porto);
         sops.sem_num = *id_porto;
         sops.sem_op = -1;
         sops.sem_flg = IPC_NOWAIT;
@@ -230,14 +229,13 @@ int main(int argc, char *argv[])
             ptr_shm_port[*id_porto].banchine_occupate++;
             sendAttackMessage(ptr_shm_port[*id_porto].message_queue_key, "Attack on the quay!");
             ship_expired_good(ptr_shm_ship, ptr_shm_v_conf, ptr_shm_good, id_ship, stiva);
-            printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
+            // printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 0;
             sops.sem_num = *id_porto;
             sops.sem_op = -1;
             sops.sem_flg = 0;
             if (semop(ptr_shm_sem[1], &sops, 1) != -1)
             {
-                printf("SHIP %i: è attaccata al porto %i, sta per effettuare scambi di merce\n", id_ship, *id_porto);
                 /*-------salvo il pid della nave per inviare segnali in caso di swell--------*/
                 ptr_shm_ship[id_ship].in_exchange = 1;
                 ptr_shm_port[*id_porto].pid_ship = ptr_shm_ship[id_ship].pid;
@@ -261,7 +259,6 @@ int main(int argc, char *argv[])
                                     // printf("SHIP %i: lotti in stiva:%i, domanda per questa merce :%i\n", id_ship, stiva[i][j].lotti, domanda_porto[ptr_shm_v_conf->days_real][z].lotti);
                                     while ((stiva[i][j].lotti > 0) && (domanda_porto[i][z].lotti > 0))
                                     {
-                                        printf("SHIP %i:  sta soddifando la domanda del porto %i, la domanda  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[i][j].id, domanda_porto[ptr_shm_v_conf->days_real][z].lotti);
                                         stiva[i][j].lotti--;
                                         domanda_porto[ptr_shm_v_conf->days_real][z].lotti--;
                                         domanda_porto[ptr_shm_v_conf->days_real][z].recap.consegnata = 1;
@@ -276,7 +273,6 @@ int main(int argc, char *argv[])
                     if (merce_scambiata != 0)
                     {
                         tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
-                        printf("SHIP %i: tempo di scarica : %f \n", id_ship, tmp_load);
                         nano_load.tv_sec = (int)tmp_load;                            /*take seconds*/
                         nano_load.tv_nsec = (tmp_load - (int)tmp_load) * 1000000000; /*take nanoseconds*/
                         nanosleep(&nano_load, NULL);
@@ -295,31 +291,19 @@ int main(int argc, char *argv[])
                             {
                                 while (((ptr_shm_ship[id_ship].capacity - offerta_porto[ptr_shm_v_conf->days_real][z].size) > 0) && offerta_porto[ptr_shm_v_conf->days_real][z].lotti > 0)
                                 {
-                                    printf("SHIP %i: sta soddifando l'offerta del porto %i, l'offerta  della merce [id= %i]è %i\n", id_ship, *id_porto, stiva[i][j].id, offerta_porto[ptr_shm_v_conf->days_real][z].lotti);
                                     offerta_porto[ptr_shm_v_conf->days_real][z].lotti--;
                                     offerta_porto[ptr_shm_v_conf->days_real][z].recap.ritirata = 1;
                                     stiva[i][j].lotti++;
                                     ptr_shm_ship[id_ship].capacity -= offerta_porto[ptr_shm_v_conf->days_real][z].size;
                                     ptr_shm_port[*id_porto].g_send += offerta_porto[ptr_shm_v_conf->days_real][z].size;
                                     merce_scambiata = merce_scambiata + offerta_porto[ptr_shm_v_conf->days_real][z].size;
-                                    // printf("SHIP %i: MERCE SCAMBIATA : %f \n", id_ship, merce_scambiata);
                                 }
                             }
                         }
                     }
                 }
                 /*------VERIFICO QUANTITÀ CARICATE SULA NAVE------*/
-                if (merce_scambiata != 0)
-                {
 
-                    for (i = 0; i <= ptr_shm_v_conf->days_real; i++)
-                    {
-                        for (j = 0; j < ptr_shm_v_conf->so_merci; j++)
-                        {
-                            printf("SHIP %i: giorno %i---> dopo aggiornamento in stiva merce %i---> lotti :%i\n", id_ship, ptr_shm_v_conf->days_real, stiva[i][j].id, stiva[i][j].lotti);
-                        }
-                    }
-                }
                 if (merce_scambiata != 0)
                 {
                     tmp_load = merce_scambiata / ptr_shm_v_conf->so_loadspeed;
@@ -334,11 +318,10 @@ int main(int argc, char *argv[])
                 sops.sem_num = *id_porto;
                 sops.sem_op = 1;
                 sops.sem_flg = 0;
-                semop(ptr_shm_sem[1], &sops, 1); /*aggiungo al semaforo della memoria condivisa*/
+                semop(ptr_shm_sem[1], &sops, 1);
                 ptr_shm_ship[id_ship].in_exchange = 0;
                 /*--------la nave non sta più scambiando merce--------*/
                 ptr_shm_port[*id_porto].pid_ship = 0;
-                // printf("Ship: la nave %i ho terminato di interagire con il porto, ora rilascio la risorsa della memoria condivisa\n", id_ship);
             }
             sops.sem_num = *id_porto;
             sops.sem_op = 1;
@@ -347,7 +330,6 @@ int main(int argc, char *argv[])
             ptr_shm_port[*id_porto].banchine_occupate--;
             ptr_shm_ship[id_ship].location = 1;
         }
-        printf("SHIP %i: la nave sta lasciando un porto %i\n", id_ship, *id_porto);
         ship_move_to(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     }
     return 0;

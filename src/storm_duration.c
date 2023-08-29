@@ -42,7 +42,7 @@ void cleanup()
         perror("STORM: ERROR ptr_shm_porto ");
         exit(1);
     }
-      if (shmdt(ptr_shm_ship) == -1)
+    if (shmdt(ptr_shm_ship) == -1)
     {
         perror("STORM: ERROR ptr_shm_ship ");
         exit(1);
@@ -92,11 +92,10 @@ void main(int argc, char *argv[])
     for (i = 0;; i++)
     {
         random_ship = rand() % (ptr_shm_v_conf->so_navi);
-        //printf("STORM: nave da comlpire : %i\n", random_ship);
         sleep(1);
         if (kill(ptr_shm_ship[random_ship].pid, SIGUSR1) != -1)
         {
-            printf("SEGNALE STORM inviato correttamente alla nave %i\n", ptr_shm_ship[random_ship].id_ship);
+            printf("SIGNAL STORM SEND CORRECTLY TO THE SHIP %i\n", ptr_shm_ship[random_ship].id_ship);
         }
     }
 }

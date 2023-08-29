@@ -75,14 +75,14 @@ void main(int argc, char *argv[])
     struct timespec nano_load;
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
-        printf("SWELL: ricezione segnale nel swell_duration\n");
+        printf("SWELL: SIGNAL TERMINATION RECEIVE\n");
         exit(1);
     }
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("SWELL:  configurata, pronta per partire\n");
+    printf("SWELL:  CONFIGURATED, READY TO GO \n");
     /*----attendo il via dal master----*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
@@ -91,19 +91,17 @@ void main(int argc, char *argv[])
 
     for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
-        /*capire come fermare lo scambio delle merci mandando il segnale alla nave */
         int random_port = (rand() % ptr_shm_v_conf->so_porti);
         sleep(1);
         if (ptr_shm_port[random_port].pid_ship != 0)
         {
             if (kill(ptr_shm_port[random_port].pid_ship, SIGUSR2) != -1)
             {
-                printf("SEGNALE SWELL INVIATO correttamente alla nave\n");
+                printf("SEGNALE SWELL SEND CORRECTLY TO THE SHIP\n");
             }
         }
-        else /*altrimenti significa che non ci sono navi attaccate e semplicemente tolgo la risorsa della memoria condivisa*/
+        else /*THE PORT HAS NOT SHIP IN THE QUAY*/
         {
-            // printf("SWELL RICHIEDE LA RISORSA DELLA MEMORIA CONDIVISA\n");
             sops.sem_num = random_port;
             sops.sem_op = -1;
             sops.sem_flg = 0;

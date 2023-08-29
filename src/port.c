@@ -86,7 +86,7 @@ void cleanup()
 
 void handle_kill_signal(int signum)
 {
-    printf("PORTO %i: Ricevuto segnale di KILL (%d).\n", id_porto, signum);
+    printf("PORTO %i: RECEIVE KILL SIGNAL.\n", id_porto);
     // check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
@@ -214,25 +214,21 @@ int main(int argc, char *argv[])
     {
         printf("DUMP asked: Porto [%i] -->  merce [%i] --> [%i] lotti \n", id_porto, domanda_days[0][j].id, domanda_days[0][j].lotti);
     }
-    /*
-    creo i messaggi da mandare alla nave che accede allo scambio della merce e gli mando l'id della mm condivisa del porto
-    */
 
     /*---------------------------------------------------------------------------*/
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("-----PORTO %i: CONFIGURATO, PRONTO ALLA SIMULAZIONE-----\n", id_porto);
+    printf("-----PORTO %i: CONFIGURATED, READY FOR THE SIMULATION-----\n", id_porto);
     /*---------------------------------------------------------------------------*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
-    printf("----PORTO %i: START SIMULAZIONE----\n", id_porto);
+    printf("----PORTO %i: START SIMULATION----\n", id_porto);
     /*----START SIMULAZIONE-----*/
     for (i = 0;; i++)
     {
-        // sleep(1);
         receive_message(id_msg);
         expired_good(offerta_days, ptr_shm_good, ptr_shm_v_conf, type_offered, id_porto, ptr_shm_v_conf->days_real);
     }

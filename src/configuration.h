@@ -41,7 +41,7 @@ struct var_conf
     int so_speed;
     int so_loadspeed;
     int so_fill;
-    int so_banchine; /*nave non aspetta che la banchina sia libera*/
+    int so_banchine;
     int so_capacity;
     double so_maelstorm;
     double so_swell_duration;
@@ -74,9 +74,9 @@ struct position
 
 struct sink
 {
-    int maelstorm;
-    int storm;
-    int swell;
+    int maelstorm; /*count the number of ship sink by maelstorm*/
+    int storm;     /*count the numberof ship hit by storm*/
+    int swell;     /*count the number of ship slowdown */
 };
 /*-----definition of the ship's structure----- */
 struct ship
@@ -116,27 +116,62 @@ struct Message
     long messageType;
     char messageText[100];
 };
-/*funzione che mi apre il file */
+/**
+ * find_val: This function reads and extracts configuration values from a file.
+ * It opens a configuration file, parses lines containing variable assignments, and updates the provided var_conf structure with the extracted values.
+ * It dynamically interprets variables' names and assigns their corresponding values.
+ * This function is essential for dynamically loading configuration parameters for the simulation.
+ */
+void find_val(struct var_conf *env_var);
+/**
+ * open_file: A helper function that opens a configuration file in read mode.
+ * It's used by the find_val function to access the configuration file for extracting variable values.
+ * This function ensures proper file handling and error reporting.
+ */
 void open_file(FILE **f_c);
 
-/* ---funzione che legge dei valori da "file-configurazione" per inizializzare i parametri della struct var_conf
-    che contiene le variabili di configurazione SO_...----- */
-void find_val(struct var_conf *env_var); /*CORRETTA*/
-
-/*-----inizializzo le var di configurazione in shared memory----*/
+/**
+ * sh_memory_v_conf: This function initializes shared memory variables for configuration parameters.
+ * It copies the values from the provided env_var structure to a shared memory ptr_shm_v_conf structure.
+ * This is a critical step to ensure that all processes accessing shared memory have consistent configuration data for the simulation.
+ */
 void sh_memory_v_conf(struct var_conf env_var, struct var_conf *ptr_shm_v_conf);
 
-/*-----inizialization of merce shared memory----*/
+/**
+ * sh_memory_v_good: This function initializes shared memory variables for goods.
+ * It populates the ptr_shm_good array with goods' attributes such as ID, size, and lifespan.
+ * The function generates random values within specified ranges and assigns them to each good, ensuring variability among goods.
+ */
 void sh_memory_v_good(struct var_conf env_var, struct good *ptr_shm_good);
-/*-----insert all caratteristic pf good in stiva-----*/
+/**
+ * set_good_ship: This function initializes shared memory variables for goods on ships.
+ * It copies the attributes of goods stored in the ptr_shm_good array to the stiva array, which represents goods on ships across different days.
+ * It ensures that goods' attributes are synchronized between different data structures.
+ */
 void set_good_ship(struct good *ptr_shm_good, struct good **stiva, struct var_conf env_var);
-/*-----inizialization of port shared memory----*/
+/**
+ * This function initializes shared memory variables for ports.
+ * It populates the ptr_shm_port array with port attributes such as the number of docks and fill percentage.
+ * It also assigns positions to each port, distributing them across specified coordinates or random positions within a range.
+ */
 void sh_memory_v_porti(struct var_conf env_var, struct port *ptr_shm_port);
-/*-----sorting of the port's distance from the origin of the map and assignement of id_port------*/
+/**
+ * port_sorting: This function sorts ports based on their distance from the origin using the bubble sort algorithm.
+ * It reorders the ptr_shm_port array, placing ports with shorter distances earlier in the array.
+ * This is useful for optimizing the order in which ships visit ports.
+ */
 void port_sorting(struct var_conf *ptr_shm_v_conf, struct port *ptr_shm_port); /*CORRETTA*/
-/*-----inizialization of ship shared memory----*/
+/**
+ * sh_memory_v_ship: This function initializes shared memory variables for ships.
+ * It assigns attributes such as capacity, speed, and positions to each ship within the ptr_shm_ship array.
+ * It also generates random positions within specified ranges for each ship.
+ */
 void sh_memory_v_ship(struct var_conf env_var, struct ship *ptr_shm_ship);
-/*-----inizializzo i valori dei semafori nel master-------*/
+/**
+ * load_val_semaphor: This function initializes semaphore values for synchronization.
+ * It sets initial values for semaphores associated with dock access, shared memory access, and simulation start.
+ * It ensures proper synchronization and coordination among different processes accessing shared resources in the simulation.
+ */
 void load_val_semaphor(int sem_id_banchine, int sem_id_shm, int sem_id, int *ptr_shm_semaphore, struct var_conf *ptr_shm_v_conf);
 
 #endif /* CONFIGURATION_H*/

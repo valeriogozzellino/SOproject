@@ -109,7 +109,7 @@ void main(int argc, char *argv[])
             if (ptr_shm_ship[j].sink_check != 1)
             {
                 if (ptr_shm_ship[j].location == 1)
-                { /*navi nel mare*/
+                { /*ship on sea*/
                     if (ptr_shm_ship[j].capacity < ptr_shm_v_conf->so_capacity)
                     {
                         ship_cariche++;
