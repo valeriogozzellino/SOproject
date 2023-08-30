@@ -87,7 +87,7 @@ void cleanup()
 void handle_kill_signal(int signum)
 {
     printf("PORTO %i: RECEIVE KILL SIGNAL.\n", id_porto);
-    // check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
+    check_good(domanda_days, offerta_days, ptr_shm_v_conf, ptr_shm_porto, ton_days, type_offered, type_asked, id_porto);
     cleanup();
 }
 
@@ -156,7 +156,6 @@ int main(int argc, char *argv[])
     close(random_fd);
 
     key_t portMessageQueueKey = random_key;
-    // Store the message queue key in the struct port
 
     if ((id_msg = msgget(portMessageQueueKey, 0600 | IPC_CREAT)) == -1)
     {
@@ -165,22 +164,18 @@ int main(int argc, char *argv[])
     }
     ptr_shm_porto[id_porto].message_queue_key = id_msg;
     /*---------------------------------------------------------------------------------------------*/
-    type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;          /*-1 perchè almeno potrò avere la domanda di almeno una merce*/
-    type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1; /*non ho il rischio di avere gli stessi tipi di merce */
+    type_offered = (rand() % (ptr_shm_v_conf->so_merci - 1)) + 1;
+    type_asked = (rand() % (ptr_shm_v_conf->so_merci - type_offered)) + 1;
     ptr_shm_porto[id_porto].n_type_asked = type_asked;
     ptr_shm_porto[id_porto].n_type_offered = type_offered;
-    /*
-    creo una memoria condivisa per organizzare domanda e offerta-per ogni porto
-    */
+
     size1 = sizeof(struct good) * type_offered * ptr_shm_v_conf->so_days;
     size2 = sizeof(struct good) * type_asked * ptr_shm_v_conf->so_days;
 
     id_shm_offerta = shmget(IPC_PRIVATE, size1, ACCESS);
     id_shm_domanda = shmget(IPC_PRIVATE, size2, ACCESS);
-    /**salvo il memoria condivisa  il numero dei tipi offerti utilizzati nello scambio di merce con le navi*/
     ptr_shm_porto[id_porto].id_shm_offerta = id_shm_offerta;
     ptr_shm_porto[id_porto].id_shm_domanda = id_shm_domanda;
-    /*memoria condivisa per offerta e domanda generate ogni giorno, visibile alle navi*/
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
         offerta_days[i] = shmat(id_shm_offerta, NULL, 0);
@@ -190,15 +185,12 @@ int main(int argc, char *argv[])
         domanda_days[i] = shmat(id_shm_domanda, NULL, 0);
     }
 
-    /*imposto l'handler*/
-    if (signal(SIGINT, handle_kill_signal) == SIG_ERR) /*verificare se me lo esegu anche nel momento in cui io non lo sto chiamando*/
+    /*set handler*/
+    if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
         printf("ricezione segnale nel porto\n");
         exit(1);
     }
-    /*-----
-    creo la merce e i lotti
-    -----*/
     ton_days = (ptr_shm_v_conf->so_fill / ptr_shm_v_conf->so_porti / ptr_shm_v_conf->so_days);
     create_goods(ptr_shm_v_conf, ptr_shm_good, domanda_days, offerta_days, type_offered, type_asked);
     for (i = 0; i < ptr_shm_v_conf->so_days; i++)

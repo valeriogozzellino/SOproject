@@ -1,6 +1,6 @@
 SO_DAYS= 10;  
-SO_NAVI= 3;   
-SO_PORTI= 4;  
+SO_NAVI= 20;   
+SO_PORTI= 5;  
 SO_MERCI= 10;   
 SO_SIZE= 20;   
 SO_MIN_VITA= 2; 
