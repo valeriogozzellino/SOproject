@@ -1,7 +1,5 @@
 CC = gcc
 all: bin/master bin/port bin/ship bin/storm_duration bin/swell_duration bin/maelstorm bin/dump
-prova: bin/file-prova
-
 
  CFLAGS = -g
 
@@ -33,7 +31,5 @@ bin/swell_duration: build/swell_duration.o build/configuration.o $(COMMON_DEPS)
 bin/dump: build/dump.o build/configuration.o $(COMMON_DEPS)
 	$(CC) -o bin/dump build/configuration.o build/dump.o -lm
 
-bin/file-prova: build/file-prova.o build/configuration.o build/headerport.o $(COMMON_DEPS)
-	$(CC) -o bin/file-prova build/configuration.o build/file-prova.o build/headerport.o -lm 
 clean: 
 	rm -f build/* bin/*
