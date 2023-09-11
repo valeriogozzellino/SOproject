@@ -94,7 +94,7 @@ void ship_expired_good(struct ship *ptr_shm_ship, struct var_conf *ptr_shm_v_con
 void sendAttackMessage(int portMessageQueue, const char *message)
 {
     struct Message msg;
-    msg.messageType = 1; // Set the message type (can be any positive integer)
+    msg.messageType = 1;
     strncpy(msg.messageText, message, MAX_MESSAGE_SIZE);
     if (msgsnd(portMessageQueue, &msg, sizeof(msg.messageText), IPC_NOWAIT) == -1)
     {

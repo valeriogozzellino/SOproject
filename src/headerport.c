@@ -61,7 +61,7 @@ void create_lots(struct good **domanda_days, struct good **offerta_days, int ton
     double ton_disp2 = ton_days / 2;
     double ton_disp3;
 
-    /*Creazione dei lotti per le merci offerte*/
+    /*creation of lots for offerta and domanda*/
     int creazione = 1;
     int j;
     while (creazione != 0)
@@ -166,7 +166,7 @@ void check_good(struct good **domanda_days, struct good **offerta_days, struct v
 void receive_message(int id_msg)
 {
     struct Message msg;
-    msg.messageType = 1; // Set the message type (can be any positive integer)
+    msg.messageType = 1;
     if (msgrcv(id_msg, &msg, sizeof(msg.messageText), msg.messageType, IPC_NOWAIT) == -1)
     {
     }

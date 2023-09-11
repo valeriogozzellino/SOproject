@@ -18,7 +18,7 @@
 #include "configuration.h"
 #include "headerport.h"
 #define ACCESS 0600
-/*----VARIABILI GLOBALI----*/
+/*----global variables----*/
 int sh_mem_id_good, sh_mem_id_conf, sh_mem_id_port, sh_mem_id_semaphore;
 struct port *ptr_shm_porto;
 struct good *ptr_shm_good;

@@ -1,5 +1,3 @@
-/*processo nave*/
-/* come eseguire: gcc ship.c , gcc -o ship ship.c*/
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +17,7 @@
 #include "configuration.h"
 #include "headership.h"
 
-/*---------VARIABILI GLOBALI-------------*/
+/*---------global variables-------------*/
 struct var_conf *ptr_shm_v_conf;
 struct good *ptr_shm_good;
 struct good **stiva;
@@ -58,12 +56,6 @@ void cleanup()
         perror("ptr_shm_sem in ship\n");
         exit(1);
     }
-    // if (msgctl(portMessageQueue, IPC_RMID, NULL) == -1)
-    // {
-    //     perror("Failed to deallocate message queue\n");
-    //     exit(1);
-    // }
-
     exit(0);
 }
 
@@ -115,8 +107,6 @@ void handle_kill_signal(int signum)
     }
 }
 
-/*----funzione di movimento della nave verso il porto più vicino----*/
-
 /*--------MAIN --------*/
 int main(int argc, char *argv[])
 {
@@ -163,7 +153,7 @@ int main(int argc, char *argv[])
         perror("Error in attached ptr_shm_sem\n");
         exit(1);
     }
-    /*-----alloco un array per il trasporto di merci-----*/
+    /*-----malloc for the good in the ship-----*/
     stiva = malloc(sizeof(struct good) * ptr_shm_v_conf->so_days);
     struct good *domanda_porto[SO_DAYS];
     struct good *offerta_porto[SO_DAYS];
@@ -171,13 +161,9 @@ int main(int argc, char *argv[])
     {
         stiva[i] = malloc(sizeof(struct good) * ptr_shm_v_conf->so_merci);
     }
-    /**
-     * setto le caratteristiche delle merci nella stiva
-     */
+
     set_good_ship(ptr_shm_good, stiva, *ptr_shm_v_conf);
-    /**
-     * ricerco il pid tra le navi per matchare i dati e avere l'id_ship
-     */
+
     for (i = 0; i < ptr_shm_v_conf->so_navi; i++)
     {
         if (getpid() == ptr_shm_ship[i].pid)
@@ -186,9 +172,6 @@ int main(int argc, char *argv[])
             id_ship = i;
         }
     }
-    /**
-     * setto gli handler dei segnali
-     */
     if (signal(SIGINT, handle_kill_signal) == SIG_ERR)
     {
         perror("ERRORE storm signal");
@@ -204,19 +187,18 @@ int main(int argc, char *argv[])
         perror("ERRORE terminazione signal");
         exit(1);
     }
-    /*-------finito la configurazione------*/
+    /*-------ship configurated------*/
     sops.sem_flg = 0;
     sops.sem_num = RD_T0_GO;
     sops.sem_op = 1;
     semop(ptr_shm_sem[2], &sops, 1);
     printf("SHIP %i:  CONFIGURATED, READY TO GO  PID[%i]\n", id_ship, getpid());
-    /*----attendo il via dal master----*/
+    /*----wait signal from master----*/
     sops.sem_num = START_SIMULATION;
     sops.sem_op = -1;
     semop(ptr_shm_sem[2], &sops, 1);
     printf("----SHIP %i: START SIMULATION----\n", id_ship);
     ptr_shm_ship[id_ship].sink_check = 0;
-    /*eseguita la prima volta per RAGGIUNGERE IL PRIMO PORTO DALLA POSIZIONE CASUALE, SUCCESSIVAMENTE SI SPOSTERÀ DI PORTO IN PORTO*/
     ship_move_first_position(ptr_shm_ship, ptr_shm_port, ptr_shm_v_conf, id_porto, id_ship);
     /*--------execution and ship's job------*/
     for (i = 0;; i++)
@@ -229,14 +211,13 @@ int main(int argc, char *argv[])
             ptr_shm_port[*id_porto].banchine_occupate++;
             sendAttackMessage(ptr_shm_port[*id_porto].message_queue_key, "Attack on the quay!");
             ship_expired_good(ptr_shm_ship, ptr_shm_v_conf, ptr_shm_good, id_ship, stiva);
-            // printf("SHIP %i:  sta  per richiedere l'accesso alla memoria condivisa del porto %i\n", id_ship, *id_porto);
             ptr_shm_ship[id_ship].location = 0;
             sops.sem_num = *id_porto;
             sops.sem_op = -1;
             sops.sem_flg = 0;
             if (semop(ptr_shm_sem[1], &sops, 1) != -1)
             {
-                /*-------salvo il pid della nave per inviare segnali in caso di swell--------*/
+                /*-------save the ship's pid to send sweel signals--------*/
                 ptr_shm_ship[id_ship].in_exchange = 1;
                 ptr_shm_port[*id_porto].pid_ship = ptr_shm_ship[id_ship].pid;
                 for (i = 0; i < ptr_shm_v_conf->so_days; i++)
@@ -256,7 +237,6 @@ int main(int argc, char *argv[])
                             {
                                 if (stiva[i][j].id == domanda_porto[i][z].id)
                                 {
-                                    // printf("SHIP %i: lotti in stiva:%i, domanda per questa merce :%i\n", id_ship, stiva[i][j].lotti, domanda_porto[ptr_shm_v_conf->days_real][z].lotti);
                                     while ((stiva[i][j].lotti > 0) && (domanda_porto[i][z].lotti > 0))
                                     {
                                         stiva[i][j].lotti--;
@@ -302,7 +282,7 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
-                /*------VERIFICO QUANTITÀ CARICATE SULA NAVE------*/
+                /*------CHECK QUANTITY LOAD ON THE SHIP------*/
 
                 if (merce_scambiata != 0)
                 {
@@ -320,7 +300,7 @@ int main(int argc, char *argv[])
                 sops.sem_flg = 0;
                 semop(ptr_shm_sem[1], &sops, 1);
                 ptr_shm_ship[id_ship].in_exchange = 0;
-                /*--------la nave non sta più scambiando merce--------*/
+                /*--------ship stops to exchange goods--------*/
                 ptr_shm_port[*id_porto].pid_ship = 0;
             }
             sops.sem_num = *id_porto;
