@@ -16,12 +16,10 @@
 #include "configuration.h"
 #define NUM_PROCESSI (env_var.so_navi + env_var.so_porti + 4)
 
-/*--------variabili che devo utilizzare---------*/
+/*--------variables---------*/
 struct var_conf env_var;
 struct good merce;
 struct port porto;
-
-/*----puntatori alla memoria condivisa------*/
 struct var_conf *ptr_shm_v_conf;
 struct good *ptr_shm_good;
 struct port *ptr_shm_port;
@@ -45,7 +43,6 @@ void signalHandler(int signum);
 /*----------MAIN-----------*/
 int main()
 {
-    /*------ora configuro le variabili-------*/
     signal(SIGINT, signalHandler);
     signal(SIGALRM, signalHandler);
     days_real = 0;
@@ -53,10 +50,8 @@ int main()
     int active_ship;
     srand(time(NULL));
 
-    /*-----funzioni in file configuration.h----*/
     find_val(&env_var);
-
-    /*-----alloco una memoria condivisa---- */
+    /*---------create shared memory id----------*/
     if ((sh_mem_id_conf = shmget(IPC_PRIVATE, sizeof(struct var_conf), 0600)) < 0)
     {
         TEST_ERROR;
