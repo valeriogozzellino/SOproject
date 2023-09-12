@@ -63,6 +63,7 @@ void handle_kill_signal(int signum)
 }
 void main(int argc, char *argv[])
 {
+    int i, random_port;
     sh_mem_id_conf = atoi(argv[1]);
     sh_mem_id_port = atoi(argv[2]);
     sh_mem_id_ship = atoi(argv[3]);
@@ -89,9 +90,9 @@ void main(int argc, char *argv[])
     semop(ptr_shm_sem[2], &sops, 1);
     printf("----SWELL_DURATION: START SIMULATION----\n");
 
-    for (int i = 0; i < ptr_shm_v_conf->so_days; i++)
+    for (i = 0; i < ptr_shm_v_conf->so_days; i++)
     {
-        int random_port = (rand() % ptr_shm_v_conf->so_porti);
+        random_port = (rand() % ptr_shm_v_conf->so_porti);
         sleep(1);
         if (ptr_shm_port[random_port].pid_ship != 0)
         {
